@@ -198,6 +198,24 @@ export default function Home() {
     setImportingMessage("Gerando roteiros com IA...");
     setStep("importing");
     setWarning("");
+
+    // Upload reference assets to server before generating
+    if (referenceAssetFiles.length > 0) {
+      const formData = new FormData();
+      formData.append("folder", "referencias");
+      for (const file of referenceAssetFiles) {
+        formData.append("files", file);
+      }
+      try {
+        const uploadRes = await fetch("/api/assets/upload", { method: "POST", body: formData });
+        const uploadData = await uploadRes.json();
+        if (uploadData.saved) {
+          // Auto-select these assets for production
+          setSelectedAssets(prev => [...prev, ...uploadData.saved]);
+        }
+      } catch { /* continue anyway */ }
+    }
+
     try {
       const res = await fetch("/api/scripts/generate", {
         method: "POST",
@@ -279,7 +297,20 @@ export default function Home() {
     try {
       const res = await fetch("/api/assets");
       const data = await res.json();
-      setAssets(data.folders || {});
+      const folders = data.folders || {};
+      setAssets(folders);
+
+      // Auto-select all image assets if none selected yet
+      setSelectedAssets(prev => {
+        if (prev.length > 0) return prev;
+        const allImages: string[] = [];
+        Object.values(folders).forEach((folderAssets: any) => {
+          (folderAssets as Array<{ name: string; path: string; type: string; folder: string }>).forEach(
+            (a) => { if (a.type === "image") allImages.push(a.path); }
+          );
+        });
+        return allImages.length > 0 ? allImages : prev;
+      });
     } catch { /* ignore */ }
     setLoadingAssets(false);
   }
@@ -809,7 +840,7 @@ export default function Home() {
                 >
                   Gerar estáticos
                 </button>
-                <button onClick={() => handleProduceAll("static", "openrouter-image")} disabled={producingCount > 0} className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-40">Estáticos (GPT-5)</button>
+                <button onClick={() => handleProduceAll("static", "openrouter-image")} disabled={producingCount > 0} className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-40">Estáticos (Pro)</button>
                 <button
                   onClick={() => handleProduceAll("video")}
                   disabled={producingCount > 0}
@@ -889,7 +920,7 @@ export default function Home() {
                               {ps.status === "idle" && script.type === "static" && (
                                 <div className="flex gap-1.5">
                                   <button onClick={() => handleProduce(script, "fal-image")} className="px-3 py-1.5 bg-emerald-500 text-white text-[10px] font-semibold rounded-lg hover:bg-emerald-600 whitespace-nowrap">Fal AI</button>
-                                  <button onClick={() => handleProduce(script, "openrouter-image")} className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-semibold rounded-lg hover:bg-blue-700 whitespace-nowrap">GPT-5</button>
+                                  <button onClick={() => handleProduce(script, "openrouter-image")} className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-semibold rounded-lg hover:bg-blue-700 whitespace-nowrap">FLUX Pro</button>
                                 </div>
                               )}
                               {ps.status === "idle" && script.type !== "static" && (

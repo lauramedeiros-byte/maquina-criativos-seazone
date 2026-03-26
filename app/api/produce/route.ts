@@ -6,7 +6,7 @@ import {
   FalVideoService,
   uploadToFalStorage,
 } from "@/lib/services/fal-service";
-import { OpenRouterImageService } from "@/lib/services/openrouter-service";
+import { PremiumImageService } from "@/lib/services/openrouter-service";
 import { geminiText } from "@/lib/services/gemini-service";
 
 export const maxDuration = 300;
@@ -203,8 +203,8 @@ export async function POST(request: Request) {
       }
 
       case "openrouter-image": {
-        const service = new OpenRouterImageService();
-        const result = await service.generate(enhancedPrompt);
+        const service = new PremiumImageService();
+        const result = await service.generate(enhancedPrompt, referenceImageUrl);
 
         const hookText = body.hook || title;
         const { score, scoreReason } = await scoreCreative(
