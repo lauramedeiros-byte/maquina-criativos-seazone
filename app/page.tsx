@@ -724,40 +724,59 @@ export default function Home() {
                     return (
                       <div key={script.id} className={`bg-white rounded-xl border shadow-sm overflow-hidden ${ps.status === "done" ? "border-green-200" : ps.status === "error" ? "border-red-200" : "border-gray-100"}`}>
                         <div className={`h-1 bg-gradient-to-r ${cfg.color}`} />
-                        <div className="p-4 flex items-center gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold ${cfg.badge}`}>{cfg.icon}{cfg.label}</span>
-                              <span className="text-xs text-gray-400 font-mono">#{script.id}</span>
-                              <span className="text-xs font-medium text-gray-700">{script.title}</span>
+                        <div className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold ${cfg.badge}`}>{cfg.icon}{cfg.label}</span>
+                                <span className="text-xs text-gray-400 font-mono">#{script.id}</span>
+                                <span className="text-xs font-medium text-gray-700">{script.title}</span>
+                              </div>
+                              <p className="text-xs text-gray-500 line-clamp-1">{script.script}</p>
                             </div>
-                            <p className="text-xs text-gray-500 line-clamp-1">{script.script}</p>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {ps.status === "idle" && (script.type === "static" ? (
+                                <button onClick={() => handleProduce(script, "fal-image")} className="px-3 py-1.5 bg-emerald-500 text-white text-[11px] font-semibold rounded-lg hover:bg-emerald-600 whitespace-nowrap">Gerar Imagem (Fal AI)</button>
+                              ) : (
+                                <button onClick={() => handleProduce(script, "fal-video")} className="px-3 py-1.5 bg-purple-500 text-white text-[11px] font-semibold rounded-lg hover:bg-purple-600 whitespace-nowrap">Gerar Vídeo (Fal AI)</button>
+                              ))}
+                              {ps.status === "producing" && (
+                                <div className="flex items-center gap-2 text-xs text-gray-500">
+                                  <svg className="w-4 h-4 animate-spin text-seazone-primary" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
+                                  {ps.platform}...
+                                </div>
+                              )}
+                              {ps.status === "done" && (
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-1 rounded-md text-[10px] font-semibold bg-green-100 text-green-700">Pronto</span>
+                                  {ps.resultUrl && !ps.resultUrl.startsWith("data:") && (
+                                    <a href={ps.resultUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-seazone-secondary hover:underline font-medium">Ver criativo</a>
+                                  )}
+                                  {ps.resultUrl && (
+                                    <a href={ps.resultUrl} download={ps.fileName || `criativo_${script.id}.png`} className="px-2 py-1 rounded-md text-[10px] font-semibold bg-seazone-primary text-white hover:bg-seazone-secondary transition">Download</a>
+                                  )}
+                                </div>
+                              )}
+                              {ps.status === "error" && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-red-500">{ps.error}</span>
+                                  <button onClick={() => setProductionStatus((p) => ({ ...p, [script.id]: { status: "idle" } }))} className="text-[10px] text-gray-500 underline">Tentar</button>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {ps.status === "idle" && (script.type === "static" ? (
-                              <button onClick={() => handleProduce(script, "fal-image")} className="px-3 py-1.5 bg-emerald-500 text-white text-[11px] font-semibold rounded-lg hover:bg-emerald-600 whitespace-nowrap">Gerar Imagem (Fal AI)</button>
-                            ) : (
-                              <button onClick={() => handleProduce(script, "fal-video")} className="px-3 py-1.5 bg-purple-500 text-white text-[11px] font-semibold rounded-lg hover:bg-purple-600 whitespace-nowrap">Gerar Vídeo (Fal AI)</button>
-                            ))}
-                            {ps.status === "producing" && (
-                              <div className="flex items-center gap-2 text-xs text-gray-500">
-                                <svg className="w-4 h-4 animate-spin text-seazone-primary" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
-                                {ps.platform}...
-                              </div>
-                            )}
-                            {ps.status === "done" && (
-                              <div className="flex items-center gap-2">
-                                <span className="px-2 py-1 rounded-md text-[10px] font-semibold bg-green-100 text-green-700">{ps.platform}</span>
-                                {ps.resultUrl && <a href={ps.resultUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-seazone-secondary hover:underline font-medium">Ver criativo</a>}
-                              </div>
-                            )}
-                            {ps.status === "error" && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-red-500">{ps.error}</span>
-                                <button onClick={() => setProductionStatus((p) => ({ ...p, [script.id]: { status: "idle" } }))} className="text-[10px] text-gray-500 underline">Tentar</button>
-                              </div>
-                            )}
-                          </div>
+                          {/* Preview da imagem gerada */}
+                          {ps.status === "done" && ps.resultUrl && (
+                            <div className="mt-3 rounded-lg overflow-hidden border border-gray-100 bg-gray-50">
+                              {ps.resultUrl.startsWith("data:image") || ps.resultUrl.match(/\.(png|jpg|jpeg|webp)/) ? (
+                                <img src={ps.resultUrl} alt={script.title} className="w-full max-h-[400px] object-contain" />
+                              ) : ps.resultUrl.match(/\.(mp4|webm)/) ? (
+                                <video src={ps.resultUrl} controls className="w-full max-h-[400px]" />
+                              ) : (
+                                <a href={ps.resultUrl} target="_blank" rel="noopener noreferrer" className="block p-4 text-center text-sm text-seazone-secondary hover:underline">Abrir criativo</a>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
