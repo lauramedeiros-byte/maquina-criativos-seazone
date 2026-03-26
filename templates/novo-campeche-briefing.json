@@ -1,0 +1,10 @@
+{
+  "projectName": "Novo Campeche - SPOT II",
+  "client": "Novo Campeche",
+  "duration": 30,
+  "style": "Professional",
+  "script": "Bem-vindo ao Novo Campeche SPOT II. Onde a inovação encontra a tradição.",
+  "imagePrompt": "Modern beach resort, luxury, sunset, professional photography",
+  "voiceConfig": { "language": "pt-BR", "gender": "female" },
+  "colors": { "primary": "#1F4E78", "secondary": "#2E75B6", "accent": "#FFFFFF" }
+}

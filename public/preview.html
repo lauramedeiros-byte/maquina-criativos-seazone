@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎬 Preview - Máquina de Criativos Seazone</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .demo-badge {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #27AE60;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      z-index: 1000;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-badge">🎬 PREVIEW MODO DEMO</div>
+
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo">
+          <span class="logo-icon">🎬</span>
+          <div class="logo-text">
+            <h1>Máquina de Criativos</h1>
+            <p>Seazone IA</p>
+          </div>
+        </div>
+        <div class="status-badge">
+          <span class="status-dot idle"></span>
+          Pronto
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <div class="container">
+
+        <!-- Control Panel -->
+        <section class="control-panel">
+          <h2>🚀 Gerar Criativos</h2>
+
+          <div class="control-group">
+            <label for="briefingSelect">Selecione o Projeto:</label>
+            <select id="briefingSelect">
+              <option value="novo-campeche-briefing.json" selected>Novo Campeche - SPOT II</option>
+              <option value="brava-resort-briefing.json">Brava Resort - SPOT III</option>
+              <option value="porto-seguro-briefing.json">Porto Seguro - SPOT IV</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="countInput">Quantidade:</label>
+            <input type="number" id="countInput" value="45" min="1" max="100">
+          </div>
+
+          <div class="button-group">
+            <button class="btn btn-primary" onclick="demoStart()">
+              <span class="btn-icon">▶️</span>
+              Iniciar Geração (DEMO)
+            </button>
+            <button class="btn btn-secondary" disabled>
+              <span class="btn-icon">⏹️</span>
+              Parar
+            </button>
+            <button class="btn btn-tertiary" onclick="demoReset()">
+              <span class="btn-icon">🔄</span>
+              Limpar
+            </button>
+          </div>
+
+          <div style="margin-top: 20px; padding: 15px; background: #D1ECF1; border-radius: 8px; border-left: 4px solid #0C5460;">
+            <strong style="color: #0C5460;">💡 Dica:</strong> Este é um PREVIEW estático. Para gerar criativos de verdade, use o comando: <code style="background: white; padding: 2px 5px; border-radius: 3px;">npm run web</code>
+          </div>
+        </section>
+
+        <!-- Progress Section - DEMO -->
+        <section class="progress-section" id="progressSection" style="display:none;">
+          <h2 id="projectName">Novo Campeche - SPOT II</h2>
+
+          <div class="progress-info">
+            <div class="progress-stat">
+              <span class="stat-label">Progresso</span>
+              <span class="stat-value" id="progressPercent">0%</span>
+            </div>
+            <div class="progress-stat">
+              <span class="stat-label">Gerados</span>
+              <span class="stat-value" id="progressCount">0/45</span>
+            </div>
+            <div class="progress-stat">
+              <span class="stat-label">Tempo</span>
+              <span class="stat-value" id="elapsedTime">0s</span>
+            </div>
+          </div>
+
+          <div class="progress-bar-container">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Inicializando...</div>
+          </div>
+
+          <div class="distribution">
+            <div class="dist-item">
+              <span class="dist-label">📸 Estáticas</span>
+              <span class="dist-value" id="staticCount">15</span>
+            </div>
+            <div class="dist-item">
+              <span class="dist-label">🎙️ Narradas</span>
+              <span class="dist-value" id="narratedCount">15</span>
+            </div>
+            <div class="dist-item">
+              <span class="dist-label">👤 Avatar</span>
+              <span class="dist-value" id="avatarCount">15</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Creatives Grid - DEMO -->
+        <section class="creatives-section" id="creativesSection" style="display:none;">
+          <h2>📦 Criativos Gerados</h2>
+          <div class="creatives-grid" id="creativesGrid">
+            <!-- Cards preenchidos por demo -->
+          </div>
+        </section>
+
+        <!-- Status Messages -->
+        <section class="status-messages">
+          <div id="messageContainer"></div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>🎬 Máquina de Criativos Seazone v1.0.0 - PREVIEW MODE</p>
+      <p><a href="https://seazone.com.br" target="_blank">Seazone.com.br</a></p>
+    </footer>
+  </div>
+
+  <script>
+    // Demo functionality
+    let demoState = { isRunning: false, progress: 0 };
+
+    function demoStart() {
+      if (demoState.isRunning) return;
+      demoState.isRunning = true;
+      demoState.progress = 0;
+
+      document.getElementById('progressSection').style.display = 'block';
+      showMessage('✓ Iniciando geração de 45 criativos (DEMO)', 'success');
+
+      // Animate progress
+      const interval = setInterval(() => {
+        demoState.progress += Math.random() * 15;
+        if (demoState.progress > 100) demoState.progress = 100;
+
+        document.getElementById('progressPercent').textContent = Math.floor(demoState.progress) + '%';
+        document.getElementById('progressCount').textContent = Math.floor((demoState.progress / 100) * 45) + '/45';
+        document.getElementById('progressFill').style.width = demoState.progress + '%';
+        document.getElementById('progressText').textContent = `Gerando... ${Math.floor(demoState.progress)}%`;
+
+        if (demoState.progress >= 100) {
+          clearInterval(interval);
+          demoState.isRunning = false;
+          document.getElementById('progressText').textContent = '✓ Concluído!';
+          showMessage('✓ 45 criativos gerados com sucesso!', 'success');
+          showCreativesDemo();
+        }
+      }, 300);
+    }
+
+    function demoReset() {
+      demoState = { isRunning: false, progress: 0 };
+      document.getElementById('progressSection').style.display = 'none';
+      document.getElementById('creativesSection').style.display = 'none';
+      document.getElementById('creativesGrid').innerHTML = '';
+      showMessage('Estado resetado', 'info');
+    }
+
+    function showCreativesDemo() {
+      const types = ['avatar', 'narrated', 'static'];
+      const grid = document.getElementById('creativesGrid');
+      grid.innerHTML = '';
+
+      const typeEmoji = {
+        static: '📸',
+        narrated: '🎙️',
+        avatar: '👤',
+      };
+
+      const typeLabel = {
+        static: 'Estático',
+        narrated: 'Narrado',
+        avatar: 'Avatar',
+      };
+
+      for (let i = 0; i < 45; i++) {
+        const type = types[i % 3];
+        const card = document.createElement('div');
+        card.className = 'creative-card';
+        card.innerHTML = `
+          <div class="creative-badge">${typeEmoji[type]} ${typeLabel[type]}</div>
+          <div style="font-weight: 600; margin-bottom: 0.5rem;">#${i + 1}</div>
+          <div class="creative-id">creative_${1774481038975 + i}_xy${Math.random().toString(36).substr(2, 6)}</div>
+          <div style="font-size: 0.85rem; color: #718096; margin-top: 0.5rem;">
+            ${(Math.random() * 2 + 0.5).toFixed(2)}s
+          </div>
+          <div class="creative-status success">
+            ✓ Completo
+          </div>
+        `;
+        grid.appendChild(card);
+      }
+
+      document.getElementById('creativesSection').style.display = 'block';
+    }
+
+    function showMessage(text, type = 'info') {
+      const container = document.getElementById('messageContainer');
+      const messageEl = document.createElement('div');
+      messageEl.className = `message ${type}`;
+      messageEl.textContent = text;
+      container.appendChild(messageEl);
+
+      setTimeout(() => {
+        messageEl.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => messageEl.remove(), 300);
+      }, 5000);
+    }
+  </script>
+</body>
+</html>
