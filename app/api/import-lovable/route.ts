@@ -28,8 +28,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Use Gemini to extract structured data
-    const prompt = `Analise o conteúdo desta página de briefing de empreendimento imobiliário e extraia TODOS os dados.
+    // Use Gemini to extract structured data in simplified format
+    const prompt = `Analise o conteúdo desta página de briefing de empreendimento imobiliário e extraia os dados principais.
 
 CONTEÚDO DA PÁGINA:
 ${pageContent.slice(0, 25000)}
@@ -38,30 +38,15 @@ Extraia no formato JSON abaixo. Se algum campo não existir, deixe "".
 Responda APENAS o JSON, sem markdown:
 
 {
-  "nomeSpot": "nome do empreendimento/SPOT",
-  "localizacao": "localização/cidade/bairro",
-  "pontosFortes": ["diferencial 1", "diferencial 2"],
-  "apresentadora": {
-    "descricaoGeral": "conceito geral dos vídeos com apresentadora",
-    "takes": "sequência de takes/cenas",
-    "tomVoz": "tom de voz",
-    "cenario": "cenário",
-    "doseDonts": "do e dont"
-  },
-  "narrado": {
-    "descricaoGeral": "conceito dos vídeos narrados",
-    "takes": "sequência de takes/cenas",
-    "estiloVisual": "estilo visual",
-    "tomNarracao": "tom da narração",
-    "doseDonts": "do e dont"
-  },
-  "estaticos": {
-    "conteudo": "o que os criativos devem conter",
-    "estiloVisual": "estilo visual",
-    "cores": "paleta de cores",
-    "doseDonts": "do e dont"
-  }
-}`;
+  "nomeSpot": "nome completo do empreendimento/SPOT exatamente como aparece no briefing",
+  "localizacao": "bairro e cidade (ex: Campeche, Florianópolis)",
+  "pontosFortes": ["ponto forte 1 com dado real", "ponto forte 2 com dado real", "ponto forte 3 com dado real"],
+  "doseDonts": "Resuma em 2 blocos: DO: o que os criativos devem fazer/dizer. DON'T: o que evitar.",
+  "resumo": "Resumo completo de tudo que foi extraído da página: descrição do empreendimento, diferenciais, dados financeiros (ROI, valor de aluguel, etc.), localização detalhada, público-alvo, estilo visual, diretrizes de criativo e qualquer outra informação relevante."
+}
+
+IMPORTANTE para pontosFortes: inclua dados concretos como ROI, valor de aluguel mensal, distância da praia, número de unidades, etc.
+IMPORTANTE para resumo: seja completo e detalhado — este campo será usado para gerar 45 roteiros de marketing.`;
 
     const result = await geminiText(prompt);
 

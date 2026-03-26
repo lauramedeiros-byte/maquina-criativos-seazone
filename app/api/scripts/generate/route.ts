@@ -6,11 +6,9 @@ export const maxDuration = 300;
 interface RequestBody {
   nomeSpot: string;
   localizacao: string;
-  pontosFortes: string[];
-  lovableContent: string;
-  videoReferencia: string;
-  descricaoVisual: string;
-  estiloReferencia: string;
+  pontosObrigatorios: string; // mandatory points that MUST appear
+  doseDonts: string;
+  lovableData: any; // full data from Lovable import
 }
 
 const SEAZONE_CONTEXT = `
@@ -41,17 +39,17 @@ IMPORTANTE: Os roteiros NÃO devem parecer propaganda genérica de imóvel de lu
 
 export async function POST(request: Request) {
   const body: RequestBody = await request.json();
-  const { nomeSpot, localizacao, pontosFortes, lovableContent, videoReferencia, descricaoVisual, estiloReferencia } = body;
+  const { nomeSpot, localizacao, pontosObrigatorios, doseDonts, lovableData } = body;
 
   if (!isConfigured()) {
     return NextResponse.json({
-      scripts: generateDemoScripts(nomeSpot, localizacao, pontosFortes),
+      scripts: generateDemoScripts(nomeSpot, localizacao, pontosObrigatorios),
       warning: "Modo demo — configure GOOGLE_GENAI_API_KEY para roteiros reais",
     });
   }
 
   try {
-    const prompt = buildPrompt(nomeSpot, localizacao, pontosFortes, lovableContent, videoReferencia, descricaoVisual, estiloReferencia);
+    const prompt = buildPrompt(nomeSpot, localizacao, pontosObrigatorios, doseDonts, lovableData);
 
     const result = await geminiText(prompt);
 
@@ -63,7 +61,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Erro ao gerar roteiros:", error);
     return NextResponse.json({
-      scripts: generateDemoScripts(nomeSpot, localizacao, pontosFortes),
+      scripts: generateDemoScripts(nomeSpot, localizacao, pontosObrigatorios),
       warning: "Usando roteiros demo (erro na API: " + (error instanceof Error ? error.message : "desconhecido") + ")",
     });
   }
@@ -72,25 +70,27 @@ export async function POST(request: Request) {
 function buildPrompt(
   nomeSpot: string,
   localizacao: string,
-  pontosFortes: string[],
-  lovableContent: string,
-  videoReferencia: string,
-  descricaoVisual: string,
-  estiloReferencia: string
+  pontosObrigatorios: string,
+  doseDonts: string,
+  lovableData: any
 ): string {
+  const resumo = lovableData?.resumo || "";
+
   return `Você é um copywriter especialista em marketing de investimento imobiliário para aluguel por temporada. Gere 45 roteiros de criativos para o SPOT "${nomeSpot}"${localizacao ? `, localizado em ${localizacao}` : ""}.
 
 ${SEAZONE_CONTEXT}
 
 ## Particularidades deste SPOT — "${nomeSpot}":
 **Localização:** ${localizacao || "A definir"}
-**Pontos fortes específicos:**
-${pontosFortes.map((p, i) => `${i + 1}. ${p}`).join("\n")}
 
-${lovableContent ? `## Diretrizes (Do's and Don'ts) deste empreendimento:\n${lovableContent}\n` : ""}
-${videoReferencia ? `## Referência de vídeo:\nO estilo/tom deve seguir a referência: ${videoReferencia}\n` : ""}
-${descricaoVisual ? `## Descrição visual do estilo:\nAs imagens e vídeos devem seguir esta estética: ${descricaoVisual}\nIncorpore essa estética nos imagePrompts gerados.\n` : ""}
-${estiloReferencia ? `## Estilo e referências de roteiros anteriores:\n${estiloReferencia}\n` : ""}
+${resumo ? `## Resumo completo do empreendimento:\n${resumo}\n` : ""}
+
+## PONTOS OBRIGATÓRIOS (CRÍTICO):
+${pontosObrigatorios}
+
+Distribua os pontos obrigatórios entre os 45 roteiros. Cada criativo DEVE mencionar pelo menos 1 ponto obrigatório — use os dados reais acima (números, percentuais, valores) para tornar os roteiros concretos e críveis. Não invente dados que não estejam nos pontos obrigatórios.
+
+${doseDonts ? `## Do's and Don'ts deste empreendimento:\n${doseDonts}\n` : ""}
 
 ## Distribuição dos 45 criativos:
 
@@ -158,17 +158,20 @@ function parseScriptsResponse(text: string) {
   throw new Error("Não foi possível interpretar a resposta da IA");
 }
 
-function generateDemoScripts(nomeSpot: string, localizacao: string, pontosFortes: string[]) {
+function generateDemoScripts(nomeSpot: string, localizacao: string, pontosObrigatorios: string) {
   const scripts = [];
   const loc = localizacao || "região turística";
 
-  const pontos = pontosFortes.length > 0 ? pontosFortes : [
-    "A 300m da praia, região com alta demanda turística",
-    "Preço de custo na planta — oportunidade de entrada",
-    "Imóvel compacto e otimizado para máxima rentabilidade",
-    "Gestão completa Seazone após entrega",
-    "ROI projetado acima da média do mercado",
-  ];
+  // Parse mandatory points from the string, or use defaults
+  const pontosList = pontosObrigatorios
+    ? pontosObrigatorios.split(/\n|,/).map((p) => p.trim()).filter(Boolean)
+    : [
+        "A 300m da praia, região com alta demanda turística",
+        "Preço de custo na planta — oportunidade de entrada",
+        "Imóvel compacto e otimizado para máxima rentabilidade",
+        "Gestão completa Seazone após entrega",
+        "ROI projetado acima da média do mercado",
+      ];
 
   const staticAngles = [
     { title: "Rentabilidade", hook: "Seu imóvel pode render mais que a poupança.", script: `${nomeSpot}: investimento a preço de custo em ${loc}. Seu imóvel trabalhando por você 365 dias por ano.` },
@@ -202,7 +205,7 @@ function generateDemoScripts(nomeSpot: string, localizacao: string, pontosFortes
   // 15 static
   for (let i = 0; i < 15; i++) {
     const angle = staticAngles[i % staticAngles.length];
-    const ponto = pontos[i % pontos.length];
+    const ponto = pontosList[i % pontosList.length];
     scripts.push({
       id: i + 1,
       type: "static",
@@ -216,7 +219,7 @@ function generateDemoScripts(nomeSpot: string, localizacao: string, pontosFortes
   // 15 narrated
   for (let i = 0; i < 15; i++) {
     const angle = narratedAngles[i % narratedAngles.length];
-    const ponto = pontos[i % pontos.length];
+    const ponto = pontosList[i % pontosList.length];
     scripts.push({
       id: 16 + i,
       type: "narrated",

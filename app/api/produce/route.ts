@@ -6,7 +6,7 @@ import {
   FalVideoService,
   uploadToFalStorage,
 } from "@/lib/services/fal-service";
-import { overlayTextOnImage } from "@/lib/services/text-overlay-service";
+import { geminiText } from "@/lib/services/gemini-service";
 
 export const maxDuration = 300;
 
@@ -27,6 +27,12 @@ interface RequestBody {
   nomeSpot?: string;
   descricaoVisual?: string;
   referenceAssets?: string[]; // e.g. ["/assets/fachada/render1.png"]
+  pontosObrigatorios?: string;
+}
+
+interface ScoreResult {
+  score: number;
+  scoreReason: string;
 }
 
 /**
@@ -56,6 +62,57 @@ async function resolveReferenceImageUrl(
   }
 }
 
+/**
+ * Scores a creative script using Gemini.
+ * Evaluates: mandatory points coverage, hook quality, tone for real estate investment.
+ * Returns a score 0-10 and a brief Portuguese reason.
+ */
+async function scoreCreative(
+  script: string,
+  hook: string,
+  title: string,
+  pontosObrigatorios: string
+): Promise<ScoreResult> {
+  const prompt = `Você é um especialista em marketing de investimento imobiliário. Avalie este roteiro de criativo de 0 a 10.
+
+TÍTULO DO CRIATIVO: ${title}
+HOOK (abertura): ${hook}
+ROTEIRO COMPLETO:
+${script}
+
+${pontosObrigatorios ? `PONTOS OBRIGATÓRIOS que devem aparecer:\n${pontosObrigatorios}` : ""}
+
+Critérios de avaliação:
+1. O roteiro menciona pelo menos 1 ponto obrigatório com dado concreto? (peso alto)
+2. O hook é chamativo e prende atenção nos primeiros segundos? (peso alto)
+3. O tom é adequado para investidor de imóvel para aluguel por temporada (não genérico, não de luxo)? (peso médio)
+4. O CTA ou convite à ação está claro? (peso médio)
+5. A linguagem é natural, fluida e persuasiva? (peso baixo)
+
+Responda APENAS o JSON abaixo, sem markdown:
+{
+  "score": 8,
+  "scoreReason": "Motivo breve em português (1-2 frases)"
+}`;
+
+  try {
+    const result = await geminiText(prompt);
+    if (!result) return { score: 7, scoreReason: "Avaliação indisponível no momento." };
+
+    let jsonStr = result.trim().replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+    const match = jsonStr.match(/\{[\s\S]*\}/);
+    if (match) jsonStr = match[0];
+
+    const parsed = JSON.parse(jsonStr);
+    return {
+      score: typeof parsed.score === "number" ? Math.min(10, Math.max(0, parsed.score)) : 7,
+      scoreReason: typeof parsed.scoreReason === "string" ? parsed.scoreReason : "Avaliação concluída.",
+    };
+  } catch {
+    return { score: 7, scoreReason: "Não foi possível calcular a pontuação automaticamente." };
+  }
+}
+
 export async function POST(request: Request) {
   const body: RequestBody = await request.json();
   const {
@@ -66,6 +123,7 @@ export async function POST(request: Request) {
     title,
     descricaoVisual,
     referenceAssets,
+    pontosObrigatorios,
   } = body;
 
   // Build a rich prompt that gives Fal AI the context of real estate marketing creatives
@@ -90,6 +148,15 @@ export async function POST(request: Request) {
         const service = new FalImageService();
         const result = await service.generate(enhancedPrompt, referenceImageUrl);
 
+        // Score the creative after image generation using script metadata
+        const hookText = body.hook || title;
+        const { score, scoreReason } = await scoreCreative(
+          script,
+          hookText,
+          title,
+          pontosObrigatorios || ""
+        );
+
         return NextResponse.json({
           scriptId,
           platform,
@@ -97,9 +164,11 @@ export async function POST(request: Request) {
           fileName: result.fileName,
           imageUrl: result.imageUrl,
           error: result.error,
+          score,
+          scoreReason,
           // Text metadata for frontend overlay
           overlayText: {
-            hook: body.hook || title,
+            hook: hookText,
             script: script.length > 140 ? script.substring(0, 137) + "..." : script,
             nomeSpot: body.nomeSpot || title,
           },
@@ -111,6 +180,15 @@ export async function POST(request: Request) {
         const videoPrompt = `Create a cinematic professional marketing video for vacation rental investment property "${title}". Animate the building facade and surroundings. Script: "${script}". Visual: ${basePrompt}. Style: smooth camera movement, luxury real estate, aspirational.`;
         const result = await service.generate(videoPrompt, referenceImageUrl);
 
+        // Score the creative after video generation using script metadata
+        const hookText = body.hook || title;
+        const { score, scoreReason } = await scoreCreative(
+          script,
+          hookText,
+          title,
+          pontosObrigatorios || ""
+        );
+
         return NextResponse.json({
           scriptId,
           platform,
@@ -118,6 +196,8 @@ export async function POST(request: Request) {
           fileName: result.fileName,
           videoUrl: result.videoUrl,
           error: result.error,
+          score,
+          scoreReason,
         });
       }
 
