@@ -90,42 +90,19 @@ export async function POST(request: Request) {
         const service = new FalImageService();
         const result = await service.generate(enhancedPrompt, referenceImageUrl);
 
-        if (result.success && result.imageUrl) {
-          try {
-            const compositedUrl = await overlayTextOnImage({
-              imageUrl: result.imageUrl,
-              title: title,
-              hook: body.hook || title,
-              script: script,
-              nomeSpot: body.nomeSpot || title,
-            });
-            return NextResponse.json({
-              scriptId,
-              platform,
-              success: true,
-              fileName: result.fileName,
-              imageUrl: compositedUrl,
-            });
-          } catch (overlayError) {
-            // If overlay fails, return the raw image with error info
-            const overlayMsg = overlayError instanceof Error ? overlayError.message : "Overlay failed";
-            console.error("Text overlay failed:", overlayMsg);
-            return NextResponse.json({
-              scriptId, platform,
-              success: result.success,
-              fileName: result.fileName,
-              imageUrl: result.imageUrl,
-              error: `Imagem gerada sem texto (overlay error: ${overlayMsg})`,
-            });
-          }
-        }
-
         return NextResponse.json({
-          scriptId, platform,
+          scriptId,
+          platform,
           success: result.success,
           fileName: result.fileName,
           imageUrl: result.imageUrl,
           error: result.error,
+          // Text metadata for frontend overlay
+          overlayText: {
+            hook: body.hook || title,
+            script: script.length > 140 ? script.substring(0, 137) + "..." : script,
+            nomeSpot: body.nomeSpot || title,
+          },
         });
       }
 

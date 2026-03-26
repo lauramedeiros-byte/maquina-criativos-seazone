@@ -121,6 +121,7 @@ export default function Home() {
   const [productionStatus, setProductionStatus] = useState<Record<number, {
     status: "idle" | "producing" | "done" | "error";
     platform?: string; resultUrl?: string; fileName?: string; error?: string;
+    overlayText?: { hook: string; script: string; nomeSpot: string };
   }>>({});
 
   // ── Assets state
@@ -290,7 +291,7 @@ export default function Home() {
         }),
       });
       const data = await res.json();
-      setProductionStatus((p) => ({ ...p, [script.id]: data.success ? { status: "done", platform, resultUrl: data.videoUrl || data.imageUrl, fileName: data.fileName } : { status: "error", platform, error: data.error } }));
+      setProductionStatus((p) => ({ ...p, [script.id]: data.success ? { status: "done", platform, resultUrl: data.videoUrl || data.imageUrl, fileName: data.fileName, overlayText: data.overlayText } : { status: "error", platform, error: data.error } }));
     } catch { setProductionStatus((p) => ({ ...p, [script.id]: { status: "error", platform, error: "Erro de conexão" } })); }
   }
 
@@ -343,6 +344,108 @@ export default function Home() {
         ? prev.filter(p => p !== assetPath)
         : [...prev, assetPath]
     );
+  }
+
+  // ── Download criativo with text baked in via Canvas
+  async function handleDownloadCreative(scriptId: number) {
+    const ps = productionStatus[scriptId];
+    if (!ps?.resultUrl || !ps.overlayText) return;
+
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = ps.resultUrl;
+    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+
+    const size = 1080;
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d")!;
+
+    // Draw image (cover)
+    const scale = Math.max(size / img.width, size / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+
+    // Gradient overlay
+    const grad = ctx.createLinearGradient(0, 0, 0, size);
+    grad.addColorStop(0, "rgba(0,0,0,0)");
+    grad.addColorStop(0.35, "rgba(0,0,0,0)");
+    grad.addColorStop(0.65, "rgba(0,0,0,0.55)");
+    grad.addColorStop(1, "rgba(0,0,0,0.88)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+
+    // Top accent line
+    ctx.fillStyle = "#3B9AE1";
+    ctx.fillRect(40, 40, 80, 4);
+
+    // SEAZONE badge
+    ctx.fillStyle = "rgba(31,78,120,0.85)";
+    ctx.beginPath();
+    ctx.roundRect(870, 28, 170, 38, 8);
+    ctx.fill();
+    ctx.font = "bold 15px Arial";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.letterSpacing = "3px";
+    ctx.fillText("SEAZONE", 955, 53);
+    ctx.letterSpacing = "0px";
+
+    // Hook text
+    ctx.textAlign = "left";
+    ctx.font = "bold 44px Arial";
+    ctx.fillStyle = "white";
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
+    const hookLines = wrapCanvasText(ctx, ps.overlayText.hook, 1000);
+    let y = 640;
+    for (const line of hookLines) { ctx.fillText(line, 50, y); y += 54; }
+
+    // Script text
+    ctx.font = "400 22px Arial";
+    ctx.globalAlpha = 0.9;
+    ctx.shadowBlur = 4;
+    const scriptLines = wrapCanvasText(ctx, ps.overlayText.script, 1000);
+    y += 10;
+    for (const line of scriptLines) { ctx.fillText(line, 50, y); y += 32; }
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Bottom bar
+    ctx.fillStyle = "#1F4E78";
+    ctx.fillRect(0, 1040, size, 40);
+    ctx.fillStyle = "white";
+    ctx.font = "bold 16px Arial";
+    ctx.textAlign = "center";
+    ctx.letterSpacing = "2px";
+    ctx.fillText(ps.overlayText.nomeSpot.toUpperCase(), 540, 1067);
+
+    // Download
+    const link = document.createElement("a");
+    link.download = ps.fileName || `criativo_${scriptId}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+
+  function wrapCanvasText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+    const words = text.split(/\s+/);
+    const lines: string[] = [];
+    let current = "";
+    for (const word of words) {
+      const test = current ? `${current} ${word}` : word;
+      if (ctx.measureText(test).width > maxWidth && current) {
+        lines.push(current);
+        current = word;
+      } else {
+        current = test;
+      }
+    }
+    if (current) lines.push(current);
+    return lines;
   }
 
   // ─── RENDER ────────────────────────────────────
@@ -752,7 +855,10 @@ export default function Home() {
                                   {ps.resultUrl && !ps.resultUrl.startsWith("data:") && (
                                     <a href={ps.resultUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] text-seazone-secondary hover:underline font-medium">Ver criativo</a>
                                   )}
-                                  {ps.resultUrl && (
+                                  {ps.resultUrl && ps.overlayText && (
+                                    <button onClick={() => handleDownloadCreative(script.id)} className="px-2 py-1 rounded-md text-[10px] font-semibold bg-seazone-primary text-white hover:bg-seazone-secondary transition">Download com texto</button>
+                                  )}
+                                  {ps.resultUrl && !ps.overlayText && (
                                     <a href={ps.resultUrl} download={ps.fileName || `criativo_${script.id}.png`} className="px-2 py-1 rounded-md text-[10px] font-semibold bg-seazone-primary text-white hover:bg-seazone-secondary transition">Download</a>
                                   )}
                                 </div>
@@ -765,15 +871,37 @@ export default function Home() {
                               )}
                             </div>
                           </div>
-                          {/* Preview da imagem gerada */}
+                          {/* Preview da imagem gerada com overlay de texto CSS */}
                           {ps.status === "done" && ps.resultUrl && (
                             <div className="mt-3 rounded-lg overflow-hidden border border-gray-100 bg-gray-50">
-                              {ps.resultUrl.startsWith("data:image") || ps.resultUrl.match(/\.(png|jpg|jpeg|webp)/) ? (
-                                <img src={ps.resultUrl} alt={script.title} className="w-full max-h-[400px] object-contain" />
-                              ) : ps.resultUrl.match(/\.(mp4|webm)/) ? (
-                                <video src={ps.resultUrl} controls className="w-full max-h-[400px]" />
+                              {ps.resultUrl.match(/\.(mp4|webm)/) || ps.resultUrl.startsWith("data:video") ? (
+                                <video src={ps.resultUrl} controls className="w-full max-h-[500px]" />
                               ) : (
-                                <a href={ps.resultUrl} target="_blank" rel="noopener noreferrer" className="block p-4 text-center text-sm text-seazone-secondary hover:underline">Abrir criativo</a>
+                                <div id={`creative-${script.id}`} className="relative w-full" style={{ maxWidth: 540, margin: "0 auto" }}>
+                                  <img src={ps.resultUrl} alt={script.title} className="w-full block" crossOrigin="anonymous" />
+                                  {ps.overlayText && (
+                                    <>
+                                      {/* Gradient overlay */}
+                                      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.88) 100%)" }} />
+                                      {/* SEAZONE badge */}
+                                      <div className="absolute top-3 right-3 px-3 py-1 rounded-md text-[10px] font-bold tracking-widest text-white" style={{ backgroundColor: "rgba(31,78,120,0.85)" }}>SEAZONE</div>
+                                      {/* Top accent */}
+                                      <div className="absolute top-3 left-4 w-12 h-1 rounded" style={{ backgroundColor: "#3B9AE1" }} />
+                                      {/* Hook text */}
+                                      <div className="absolute left-4 right-4" style={{ bottom: "28%" }}>
+                                        <p className="text-white font-extrabold leading-tight drop-shadow-lg" style={{ fontSize: "clamp(18px, 4vw, 32px)", textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>{ps.overlayText.hook}</p>
+                                      </div>
+                                      {/* Script text */}
+                                      <div className="absolute left-4 right-4" style={{ bottom: "10%" }}>
+                                        <p className="text-white/90 leading-snug drop-shadow" style={{ fontSize: "clamp(10px, 2vw, 16px)", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>{ps.overlayText.script}</p>
+                                      </div>
+                                      {/* Bottom bar with SPOT name */}
+                                      <div className="absolute bottom-0 left-0 right-0 py-1.5 text-center" style={{ backgroundColor: "#1F4E78" }}>
+                                        <span className="text-white text-[10px] font-bold tracking-widest">{ps.overlayText.nomeSpot.toUpperCase()}</span>
+                                      </div>
+                                    </>
+                                  )}
+                                </div>
                               )}
                             </div>
                           )}
