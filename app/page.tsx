@@ -7,6 +7,7 @@ interface GeneratedScript {
   id: number;
   type: "static" | "narrated" | "avatar";
   title: string;
+  copyText?: string;  // text that goes ON the image
   script: string;
   imagePrompt: string;
   hook: string;
@@ -109,7 +110,7 @@ export default function Home() {
   const [productionStatus, setProductionStatus] = useState<Record<number, {
     status: "idle" | "producing" | "done" | "error";
     platform?: string; resultUrl?: string; fileName?: string; error?: string;
-    overlayText?: { hook: string; script: string; nomeSpot: string };
+    overlayText?: { hook: string; script: string; nomeSpot: string; cta?: string };
     score?: number;
   }>>({});
   const [driveFolderId, setDriveFolderId] = useState("");
@@ -254,10 +255,12 @@ export default function Home() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scriptId: script.id, type: script.type, platform,
-          script: script.script, imagePrompt: script.imagePrompt,
+          script: script.script, copyText: script.copyText,
+          imagePrompt: script.imagePrompt,
           title: script.title, hook: script.hook,
           nomeSpot,
           referenceAssets: selectedAssets,
+          pontosObrigatorios,
         }),
       });
       const data = await res.json();
@@ -402,6 +405,20 @@ export default function Home() {
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
+
+    // CTA button
+    if (ps.overlayText?.cta) {
+      const ctaText = ps.overlayText.cta;
+      ctx.font = "bold 20px Arial";
+      const ctaWidth = ctx.measureText(ctaText).width + 40;
+      ctx.fillStyle = "#3B9AE1";
+      ctx.beginPath();
+      ctx.roundRect(50, y + 15, ctaWidth, 40, 8);
+      ctx.fill();
+      ctx.fillStyle = "white";
+      ctx.textAlign = "left";
+      ctx.fillText(ctaText, 70, y + 42);
+    }
 
     // Bottom bar
     ctx.fillStyle = "#1F4E78";
@@ -930,7 +947,7 @@ export default function Home() {
                               {ps.status === "producing" && (
                                 <div className="flex items-center gap-2 text-xs text-gray-500">
                                   <svg className="w-4 h-4 animate-spin text-seazone-primary" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>
-                                  Gerando...
+                                  <span>Gerando{script.type === "static" ? " (~30s)" : " (~2min)"}...</span>
                                 </div>
                               )}
 
@@ -982,9 +999,17 @@ export default function Home() {
                                       <div className="absolute left-4 right-4" style={{ bottom: "28%" }}>
                                         <p className="text-white font-extrabold leading-tight drop-shadow-lg" style={{ fontSize: "clamp(18px, 4vw, 32px)", textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>{ps.overlayText.hook}</p>
                                       </div>
-                                      <div className="absolute left-4 right-4" style={{ bottom: "10%" }}>
+                                      <div className="absolute left-4 right-4" style={{ bottom: "18%" }}>
                                         <p className="text-white/90 leading-snug drop-shadow" style={{ fontSize: "clamp(10px, 2vw, 16px)", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>{ps.overlayText.script}</p>
                                       </div>
+                                      {/* CTA button */}
+                                      {ps.overlayText?.cta && (
+                                        <div className="absolute left-4 right-4" style={{ bottom: "6%" }}>
+                                          <div className="inline-block px-5 py-2 rounded-lg text-white font-bold" style={{ backgroundColor: "#3B9AE1", fontSize: "clamp(10px, 1.8vw, 14px)" }}>
+                                            {ps.overlayText.cta}
+                                          </div>
+                                        </div>
+                                      )}
                                       <div className="absolute bottom-0 left-0 right-0 py-1.5 text-center" style={{ backgroundColor: "#1F4E78" }}>
                                         <span className="text-white text-[10px] font-bold tracking-widest">{ps.overlayText.nomeSpot.toUpperCase()}</span>
                                       </div>

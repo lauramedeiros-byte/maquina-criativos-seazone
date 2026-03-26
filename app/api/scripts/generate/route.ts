@@ -123,7 +123,8 @@ Responda EXATAMENTE neste formato JSON (sem markdown, sem \`\`\`):
     "id": 1,
     "type": "static",
     "title": "título curto do criativo",
-    "script": "texto do criativo/roteiro completo",
+    "copyText": "APENAS o texto de marketing que aparece NA IMAGEM. Máximo 2 frases curtas. Sem descrições visuais.",
+    "script": "roteiro completo incluindo descrições visuais e direcionamentos",
     "imagePrompt": "prompt em inglês para gerar imagem com IA",
     "hook": "frase de gancho/abertura"
   },
@@ -132,7 +133,16 @@ Responda EXATAMENTE neste formato JSON (sem markdown, sem \`\`\`):
 
 IDs de 1 a 45. Tipos: 1-15 = "static", 16-30 = "narrated", 31-45 = "avatar".
 Cada roteiro DEVE SER ÚNICO — explore diferentes ângulos, objeções, benefícios e emoções.
-NUNCA repita a mesma estrutura de frase ou abordagem entre roteiros do mesmo tipo.`;
+NUNCA repita a mesma estrutura de frase ou abordagem entre roteiros do mesmo tipo.
+
+IMPORTANTE sobre copyText vs script:
+- copyText = APENAS o texto que o ESPECTADOR vai ler na imagem. Curto, impactante, direto.
+- script = roteiro completo com direcionamentos visuais, tom, instruções (uso interno).
+- NÃO misture descrições visuais no copyText. O copyText é PURO texto de marketing.
+- Exemplo correto de copyText: "ROI de 16,4% ao ano. Novo Campeche SPOT II — seu investimento inteligente em Floripa."
+- Exemplo ERRADO de copyText: "Visualmente, mostre a fachada do empreendimento com texto de ROI..."
+
+OBRIGATÓRIO: Todo criativo DEVE terminar com um CTA. Para estáticos, inclua "Fale com a nossa equipe" no copyText.`;
 }
 
 function parseScriptsResponse(text: string) {
@@ -174,16 +184,16 @@ function generateDemoScripts(nomeSpot: string, localizacao: string, pontosObriga
       ];
 
   const staticAngles = [
-    { title: "Rentabilidade", hook: "Seu imóvel pode render mais que a poupança.", script: `${nomeSpot}: investimento a preço de custo em ${loc}. Seu imóvel trabalhando por você 365 dias por ano.` },
-    { title: "Preço de Custo", hook: "Preço de custo. Sem intermediário.", script: `Investir no ${nomeSpot} é comprar direto na planta, a preço de custo. Menos investimento, mais retorno.` },
-    { title: "Localização", hook: `${loc}: onde turista não para de chegar.`, script: `O ${nomeSpot} está em ${loc} — uma das regiões com maior demanda de aluguel por temporada do Brasil.` },
-    { title: "Gestão Seazone", hook: "Renda sem dor de cabeça.", script: `Compre o ${nomeSpot}. A Seazone cuida do resto — hóspedes, limpeza, manutenção, tudo. Você só recebe.` },
-    { title: "Compacto e Inteligente", hook: "Menor ticket. Maior retorno.", script: `Imóvel compacto = investimento menor. No ${nomeSpot}, cada metro quadrado foi pensado para maximizar ocupação e rentabilidade.` },
-    { title: "Otimizado para Airbnb", hook: "Projetado para ser Airbnb desde o dia 1.", script: `Diferente de qualquer imóvel, o ${nomeSpot} nasceu para aluguel por temporada. Cada detalhe pensado para o hóspede.` },
-    { title: "Investimento Inteligente", hook: "Enquanto você dorme, seu SPOT rende.", script: `${nomeSpot}: o investimento inteligente em ${loc}. Renda passiva real, sem complicação.` },
-    { title: "Alta Ocupação", hook: "Região com ocupação acima de 70%.", script: `${loc} é destino o ano inteiro. O ${nomeSpot} aproveita cada temporada para gerar renda para você.` },
-    { title: "Escassez", hook: "Últimas unidades a preço de lançamento.", script: `O ${nomeSpot} está em fase de lançamento. Preço de custo é agora — depois, só valoriza.` },
-    { title: "Sem Burocracia", hook: "Investir em imóvel nunca foi tão simples.", script: `SPOT ${nomeSpot} + gestão Seazone = renda passiva sem burocracia. Simples assim.` },
+    { title: "Rentabilidade", hook: "Seu imóvel pode render mais que a poupança.", copyText: `${nomeSpot}: investimento a preço de custo em ${loc}. Fale com a nossa equipe.`, script: `${nomeSpot}: investimento a preço de custo em ${loc}. Seu imóvel trabalhando por você 365 dias por ano. Visualmente, imagem do empreendimento com destaque para rentabilidade.` },
+    { title: "Preço de Custo", hook: "Preço de custo. Sem intermediário.", copyText: `Direto na planta, a preço de custo. Menos investimento, mais retorno. Fale com a nossa equipe.`, script: `Investir no ${nomeSpot} é comprar direto na planta, a preço de custo. Menos investimento, mais retorno. Mostrar planta do empreendimento.` },
+    { title: "Localização", hook: `${loc}: onde turista não para de chegar.`, copyText: `${nomeSpot} em ${loc} — alta demanda de aluguel por temporada. Fale com a nossa equipe.`, script: `O ${nomeSpot} está em ${loc} — uma das regiões com maior demanda de aluguel por temporada do Brasil. Imagem aérea da localização.` },
+    { title: "Gestão Seazone", hook: "Renda sem dor de cabeça.", copyText: `Compre o ${nomeSpot}. A Seazone cuida do resto. Fale com a nossa equipe.`, script: `Compre o ${nomeSpot}. A Seazone cuida do resto — hóspedes, limpeza, manutenção, tudo. Você só recebe. Mostrar app de gestão.` },
+    { title: "Compacto e Inteligente", hook: "Menor ticket. Maior retorno.", copyText: `${nomeSpot}: menor investimento, maior retorno por m². Fale com a nossa equipe.`, script: `Imóvel compacto = investimento menor. No ${nomeSpot}, cada metro quadrado foi pensado para maximizar ocupação e rentabilidade. Planta inteligente.` },
+    { title: "Otimizado para Airbnb", hook: "Projetado para ser Airbnb desde o dia 1.", copyText: `${nomeSpot}: nasceu para aluguel por temporada. Cada detalhe pensado para o hóspede. Fale com a nossa equipe.`, script: `Diferente de qualquer imóvel, o ${nomeSpot} nasceu para aluguel por temporada. Cada detalhe pensado para o hóspede. Interior moderno e funcional.` },
+    { title: "Investimento Inteligente", hook: "Enquanto você dorme, seu SPOT rende.", copyText: `${nomeSpot}: renda passiva real em ${loc}. Fale com a nossa equipe.`, script: `${nomeSpot}: o investimento inteligente em ${loc}. Renda passiva real, sem complicação. Mostrar gráfico de crescimento.` },
+    { title: "Alta Ocupação", hook: "Região com ocupação acima de 70%.", copyText: `${loc} é destino o ano inteiro. ${nomeSpot} aproveita cada temporada. Fale com a nossa equipe.`, script: `${loc} é destino o ano inteiro. O ${nomeSpot} aproveita cada temporada para gerar renda para você. Imagem da região turística.` },
+    { title: "Escassez", hook: "Últimas unidades a preço de lançamento.", copyText: `${nomeSpot}: preço de custo é agora. Depois, só valoriza. Fale com a nossa equipe.`, script: `O ${nomeSpot} está em fase de lançamento. Preço de custo é agora — depois, só valoriza. Urgência visual com contador.` },
+    { title: "Sem Burocracia", hook: "Investir em imóvel nunca foi tão simples.", copyText: `SPOT ${nomeSpot} + gestão Seazone = renda passiva sem burocracia. Fale com a nossa equipe.`, script: `SPOT ${nomeSpot} + gestão Seazone = renda passiva sem burocracia. Simples assim. Ícones de processo simplificado.` },
   ];
 
   const narratedAngles = [
@@ -210,6 +220,7 @@ function generateDemoScripts(nomeSpot: string, localizacao: string, pontosObriga
       id: i + 1,
       type: "static",
       title: `Estático — ${angle.title}`,
+      copyText: angle.copyText,
       script: angle.script,
       imagePrompt: `Modern compact vacation rental apartment, ${nomeSpot}, ${loc}, ${ponto.toLowerCase()}, clean minimal design, investment property, aerial view of tourist region, professional real estate photography, 4K`,
       hook: angle.hook,
@@ -224,6 +235,7 @@ function generateDemoScripts(nomeSpot: string, localizacao: string, pontosObriga
       id: 16 + i,
       type: "narrated",
       title: `Narrado — ${angle.title}`,
+      copyText: angle.script,
       script: angle.script,
       imagePrompt: `Cinematic drone shot, vacation rental property, ${nomeSpot}, ${loc}, ${ponto.toLowerCase()}, tourist destination, golden hour, lifestyle`,
       hook: angle.hook,
@@ -237,6 +249,7 @@ function generateDemoScripts(nomeSpot: string, localizacao: string, pontosObriga
       id: 31 + i,
       type: "avatar",
       title: `Apresentadora — ${angle.title}`,
+      copyText: angle.script,
       script: angle.script,
       imagePrompt: `Clean modern background for presenter, vacation rental property showcase, ${nomeSpot}, ${loc}, professional`,
       hook: angle.hook,

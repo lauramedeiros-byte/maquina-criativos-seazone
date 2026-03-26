@@ -22,6 +22,7 @@ interface RequestBody {
   type: "static" | "narrated" | "avatar";
   platform: "fal-image" | "fal-video" | "openrouter-image";
   script: string;
+  copyText?: string;
   imagePrompt: string;
   title: string;
   hook?: string;
@@ -170,8 +171,9 @@ export async function POST(request: Request) {
           // Text metadata for frontend overlay
           overlayText: {
             hook: hookText,
-            script: script.length > 140 ? script.substring(0, 137) + "..." : script,
+            script: body.copyText || (script.length > 140 ? script.substring(0, 137) + "..." : script),
             nomeSpot: body.nomeSpot || title,
+            cta: "Fale com a nossa equipe",
           },
         });
       }
@@ -220,8 +222,9 @@ export async function POST(request: Request) {
           score, scoreReason,
           overlayText: {
             hook: hookText,
-            script: script.length > 140 ? script.substring(0, 137) + "..." : script,
+            script: body.copyText || (script.length > 140 ? script.substring(0, 137) + "..." : script),
             nomeSpot: body.nomeSpot || title,
+            cta: "Fale com a nossa equipe",
           },
         });
       }
