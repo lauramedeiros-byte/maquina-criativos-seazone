@@ -67,7 +67,6 @@ export class FalImageService {
             image_url: referenceImageUrl,
             strength: 0.35,
             num_images: 1,
-            image_size: "square_hd",
           },
         });
         imageUrl = result.data?.images?.[0]?.url;
