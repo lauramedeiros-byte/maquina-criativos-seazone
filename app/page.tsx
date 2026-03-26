@@ -229,7 +229,7 @@ export default function Home() {
   }
 
   // ── Production
-  async function handleProduce(script: GeneratedScript, platform: "fal-image" | "fal-video") {
+  async function handleProduce(script: GeneratedScript, platform: "fal-image" | "fal-video" | "openrouter-image") {
     setProductionStatus((p) => ({ ...p, [script.id]: { status: "producing", platform } }));
     try {
       const res = await fetch("/api/produce", {
@@ -254,13 +254,12 @@ export default function Home() {
     }
   }
 
-  async function handleProduceAll(type: "static" | "video") {
-    const list = type === "static"
-      ? scripts.filter((s) => s.type === "static")
-      : scripts.filter((s) => s.type === "narrated" || s.type === "avatar");
+  async function handleProduceAll(type: "static" | "video", forcePlatform?: string) {
+    const list = type === "static" ? scripts.filter((s) => s.type === "static") : scripts.filter((s) => s.type === "narrated" || s.type === "avatar");
     for (const s of list) {
       if (productionStatus[s.id]?.status === "done") continue;
-      await handleProduce(s, s.type === "static" ? "fal-image" : "fal-video");
+      const platform = forcePlatform || (s.type === "static" ? "fal-image" : "fal-video");
+      await handleProduce(s, platform as any);
     }
   }
 
@@ -810,6 +809,7 @@ export default function Home() {
                 >
                   Gerar estáticos
                 </button>
+                <button onClick={() => handleProduceAll("static", "openrouter-image")} disabled={producingCount > 0} className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-40">Estáticos (GPT-5)</button>
                 <button
                   onClick={() => handleProduceAll("video")}
                   disabled={producingCount > 0}
@@ -886,11 +886,15 @@ export default function Home() {
                                 </span>
                               )}
 
-                              {ps.status === "idle" && (script.type === "static" ? (
-                                <button onClick={() => handleProduce(script, "fal-image")} className="px-3 py-1.5 bg-emerald-500 text-white text-[11px] font-semibold rounded-lg hover:bg-emerald-600 whitespace-nowrap">Gerar Imagem</button>
-                              ) : (
+                              {ps.status === "idle" && script.type === "static" && (
+                                <div className="flex gap-1.5">
+                                  <button onClick={() => handleProduce(script, "fal-image")} className="px-3 py-1.5 bg-emerald-500 text-white text-[10px] font-semibold rounded-lg hover:bg-emerald-600 whitespace-nowrap">Fal AI</button>
+                                  <button onClick={() => handleProduce(script, "openrouter-image")} className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-semibold rounded-lg hover:bg-blue-700 whitespace-nowrap">GPT-5</button>
+                                </div>
+                              )}
+                              {ps.status === "idle" && script.type !== "static" && (
                                 <button onClick={() => handleProduce(script, "fal-video")} className="px-3 py-1.5 bg-purple-500 text-white text-[11px] font-semibold rounded-lg hover:bg-purple-600 whitespace-nowrap">Gerar Vídeo</button>
-                              ))}
+                              )}
 
                               {ps.status === "producing" && (
                                 <div className="flex items-center gap-2 text-xs text-gray-500">

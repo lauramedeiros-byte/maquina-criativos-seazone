@@ -6,6 +6,7 @@ import {
   FalVideoService,
   uploadToFalStorage,
 } from "@/lib/services/fal-service";
+import { OpenRouterImageService } from "@/lib/services/openrouter-service";
 import { geminiText } from "@/lib/services/gemini-service";
 
 export const maxDuration = 300;
@@ -19,7 +20,7 @@ function isImagePath(assetPath: string): boolean {
 interface RequestBody {
   scriptId: number;
   type: "static" | "narrated" | "avatar";
-  platform: "fal-image" | "fal-video";
+  platform: "fal-image" | "fal-video" | "openrouter-image";
   script: string;
   imagePrompt: string;
   title: string;
@@ -198,6 +199,30 @@ export async function POST(request: Request) {
           error: result.error,
           score,
           scoreReason,
+        });
+      }
+
+      case "openrouter-image": {
+        const service = new OpenRouterImageService();
+        const result = await service.generate(enhancedPrompt);
+
+        const hookText = body.hook || title;
+        const { score, scoreReason } = await scoreCreative(
+          script, hookText, title, pontosObrigatorios || ""
+        );
+
+        return NextResponse.json({
+          scriptId, platform,
+          success: result.success,
+          fileName: result.fileName,
+          imageUrl: result.imageUrl,
+          error: result.error,
+          score, scoreReason,
+          overlayText: {
+            hook: hookText,
+            script: script.length > 140 ? script.substring(0, 137) + "..." : script,
+            nomeSpot: body.nomeSpot || title,
+          },
         });
       }
 
