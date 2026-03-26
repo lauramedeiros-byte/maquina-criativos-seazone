@@ -76,9 +76,9 @@ export async function POST(request: Request) {
     referenceImageUrl = await resolveReferenceImageUrl(referenceAssets);
   }
 
-  // When we have a reference image, tell the model to maintain the property's visual identity
+  // When we have a reference image, prompt must reinforce keeping the same building/scene
   const enhancedPrompt = referenceImageUrl
-    ? `Professional real estate marketing creative for "${title}". Keep the same property, building facade, colors, and visual identity from the reference image. ${basePrompt}. Style: modern social media ad, clean typography overlay space, high-end real estate investment marketing. Brazilian Portuguese text overlay areas.`
+    ? `Keep this exact same building, facade, architecture, and scene. Only add professional marketing overlay elements: subtle gradient at bottom for text space, clean modern typography area. Do not change the building or environment. ${basePrompt}. Real estate social media ad for "${title}".`
     : `Professional real estate marketing creative for "${title}". ${basePrompt}. Style: modern social media ad, clean typography overlay space, high-end real estate investment marketing.`;
 
   try {

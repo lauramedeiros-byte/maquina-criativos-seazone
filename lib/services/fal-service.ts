@@ -60,13 +60,14 @@ export class FalImageService {
       let imageUrl: string | undefined;
 
       if (referenceImageUrl) {
-        // Image-to-image: reference asset guides the output style/composition
+        // Image-to-image: low strength keeps output very close to reference
         const result = await fal.subscribe("fal-ai/flux/dev/image-to-image", {
           input: {
             prompt,
             image_url: referenceImageUrl,
-            strength: 0.65,
+            strength: 0.35,
             num_images: 1,
+            image_size: "square_hd",
           },
         });
         imageUrl = result.data?.images?.[0]?.url;
