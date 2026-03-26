@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import { geminiText, isConfigured } from "@/lib/services/gemini-service";
 
 export const maxDuration = 300;
 
@@ -43,38 +43,28 @@ export async function POST(request: Request) {
   const body: RequestBody = await request.json();
   const { nomeSpot, localizacao, pontosFortes, lovableContent, videoReferencia, descricaoVisual, estiloReferencia } = body;
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
-  if (!apiKey) {
+  if (!isConfigured()) {
     return NextResponse.json({
       scripts: generateDemoScripts(nomeSpot, localizacao, pontosFortes),
+      warning: "Modo demo — configure GOOGLE_GENAI_API_KEY para roteiros reais",
     });
   }
 
   try {
-    const client = new Anthropic({ apiKey });
-
     const prompt = buildPrompt(nomeSpot, localizacao, pontosFortes, lovableContent, videoReferencia, descricaoVisual, estiloReferencia);
 
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 8000,
-      messages: [{ role: "user", content: prompt }],
-    });
+    const result = await geminiText(prompt);
 
-    const content = message.content[0];
-    if (content.type !== "text") {
-      throw new Error("Unexpected response type");
-    }
+    if (!result) throw new Error("Sem resposta do Gemini");
 
-    const scripts = parseScriptsResponse(content.text);
+    const scripts = parseScriptsResponse(result);
 
     return NextResponse.json({ scripts });
   } catch (error) {
     console.error("Erro ao gerar roteiros:", error);
     return NextResponse.json({
       scripts: generateDemoScripts(nomeSpot, localizacao, pontosFortes),
-      warning: "Usando roteiros de demonstração (erro na API)",
+      warning: "Usando roteiros demo (erro na API: " + (error instanceof Error ? error.message : "desconhecido") + ")",
     });
   }
 }

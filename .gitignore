@@ -6,11 +6,17 @@ node_modules/
 *.log
 temp/
 output/
-*.mp4
 *.wav
-*.png
 build/
 dist/
+
+# Media: block globally, allow images in public/assets
+*.mp4
+*.png
+!public/assets/**/*.png
+!public/assets/**/*.jpg
+!public/assets/**/*.jpeg
+!public/assets/**/*.webp
 
 # next.js
 /.next/
@@ -22,3 +28,14 @@ dist/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Scripts and docs not needed in deploy
+/scripts/
+GITHUB_VERCEL_SETUP.md
+GUIA_ENTREGA_AMANHA.md
+IMPLEMENTATION_STATUS.md
+PROJECT_SUMMARY.md
+QUICK_START.sh
+RODAR_PAINEL_HOJE.md
+SETUP_GIT.md
+server.js
