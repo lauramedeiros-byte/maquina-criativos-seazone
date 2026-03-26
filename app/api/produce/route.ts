@@ -106,14 +106,16 @@ export async function POST(request: Request) {
               fileName: result.fileName,
               imageUrl: compositedUrl,
             });
-          } catch {
-            // If overlay fails, return the raw image
+          } catch (overlayError) {
+            // If overlay fails, return the raw image with error info
+            const overlayMsg = overlayError instanceof Error ? overlayError.message : "Overlay failed";
+            console.error("Text overlay failed:", overlayMsg);
             return NextResponse.json({
               scriptId, platform,
               success: result.success,
               fileName: result.fileName,
               imageUrl: result.imageUrl,
-              error: result.error,
+              error: `Imagem gerada sem texto (overlay error: ${overlayMsg})`,
             });
           }
         }
