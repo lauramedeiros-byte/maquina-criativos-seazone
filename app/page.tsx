@@ -283,7 +283,9 @@ export default function Home() {
         body: JSON.stringify({
           scriptId: script.id, type: script.type, platform,
           script: script.script, imagePrompt: script.imagePrompt,
-          title: script.title, descricaoVisual: estEstiloVisual,
+          title: script.title, hook: script.hook,
+          nomeSpot: nomeSpot,
+          descricaoVisual: estEstiloVisual,
           referenceAssets: selectedAssets,
         }),
       });

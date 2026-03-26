@@ -6,6 +6,7 @@ import {
   FalVideoService,
   uploadToFalStorage,
 } from "@/lib/services/fal-service";
+import { overlayTextOnImage } from "@/lib/services/text-overlay-service";
 
 export const maxDuration = 300;
 
@@ -22,6 +23,8 @@ interface RequestBody {
   script: string;
   imagePrompt: string;
   title: string;
+  hook?: string;
+  nomeSpot?: string;
   descricaoVisual?: string;
   referenceAssets?: string[]; // e.g. ["/assets/fachada/render1.png"]
 }
@@ -87,9 +90,36 @@ export async function POST(request: Request) {
         const service = new FalImageService();
         const result = await service.generate(enhancedPrompt, referenceImageUrl);
 
+        if (result.success && result.imageUrl) {
+          try {
+            const compositedUrl = await overlayTextOnImage({
+              imageUrl: result.imageUrl,
+              title: title,
+              hook: body.hook || title,
+              script: script,
+              nomeSpot: body.nomeSpot || title,
+            });
+            return NextResponse.json({
+              scriptId,
+              platform,
+              success: true,
+              fileName: result.fileName,
+              imageUrl: compositedUrl,
+            });
+          } catch {
+            // If overlay fails, return the raw image
+            return NextResponse.json({
+              scriptId, platform,
+              success: result.success,
+              fileName: result.fileName,
+              imageUrl: result.imageUrl,
+              error: result.error,
+            });
+          }
+        }
+
         return NextResponse.json({
-          scriptId,
-          platform,
+          scriptId, platform,
           success: result.success,
           fileName: result.fileName,
           imageUrl: result.imageUrl,
