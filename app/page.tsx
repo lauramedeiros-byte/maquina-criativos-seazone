@@ -443,17 +443,26 @@ export default function Home() {
     ctx.fillStyle = "#F1605D";
     ctx.fillRect(40, 40, 80, 4);
 
-    // SEAZONE badge
-    ctx.fillStyle = "rgba(1,19,55,0.85)";
-    ctx.beginPath();
-    ctx.roundRect(870, 28, 170, 38, 8);
-    ctx.fill();
-    ctx.font = "bold 13px Arial";
-    ctx.fillStyle = "white";
-    ctx.textAlign = "center";
-    ctx.letterSpacing = "3px";
-    ctx.fillText("SEAZONE", 955, 53);
-    ctx.letterSpacing = "0px";
+    // SEAZONE logo (top right)
+    try {
+      const seazoneLogo = new Image();
+      seazoneLogo.crossOrigin = "anonymous";
+      seazoneLogo.src = "/assets/logos-seazone/Casinha-1 (1).png";
+      await new Promise((resolve, reject) => { seazoneLogo.onload = resolve; seazoneLogo.onerror = reject; });
+      const logoH = 70;
+      const logoW = (seazoneLogo.width / seazoneLogo.height) * logoH;
+      ctx.drawImage(seazoneLogo, size - logoW - 30, 25, logoW, logoH);
+    } catch {
+      // Fallback: text badge if logo fails to load
+      ctx.fillStyle = "rgba(1,19,55,0.85)";
+      ctx.beginPath();
+      ctx.roundRect(870, 28, 170, 38, 8);
+      ctx.fill();
+      ctx.font = "bold 13px Arial";
+      ctx.fillStyle = "white";
+      ctx.textAlign = "center";
+      ctx.fillText("SEAZONE", 955, 53);
+    }
 
     // Property logo (top left) — if available
     if (logoEmpreendimento) {
@@ -1319,8 +1328,10 @@ export default function Home() {
                                       {/* Gradient */}
                                       <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 65%, rgba(0,0,0,0.85) 100%)" }} />
 
-                                      {/* SEAZONE badge */}
-                                      <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-md text-[8px] font-bold tracking-[3px] text-white" style={{ backgroundColor: "rgba(1,19,55,0.85)" }}>SEAZONE</div>
+                                      {/* SEAZONE logo */}
+                                      <div className="absolute top-2.5 right-2.5">
+                                        <img src="/assets/logos-seazone/Casinha-1 (1).png" alt="Seazone" className="h-8 w-auto object-contain drop-shadow-lg" />
+                                      </div>
 
                                       {/* Property logo */}
                                       {logoEmpreendimento && (
