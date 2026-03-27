@@ -1,5 +1,64 @@
 import axios from "axios";
 
+export class FreepikImageService {
+  private apiKey: string;
+
+  constructor() {
+    this.apiKey = process.env.FREEPIK_API_KEY || "";
+  }
+
+  async generate(prompt: string): Promise<{
+    success: boolean;
+    imageUrl?: string;
+    fileName: string;
+    error?: string;
+  }> {
+    const fileName = `creative_freepik_${Date.now()}.png`;
+
+    if (!this.apiKey) {
+      return { success: false, fileName, error: "FREEPIK_API_KEY não configurada" };
+    }
+
+    try {
+      // Freepik AI Image Generation API
+      const res = await fetch("https://api.freepik.com/v1/ai/text-to-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-freepik-api-key": this.apiKey,
+        },
+        body: JSON.stringify({
+          prompt,
+          num_images: 1,
+          image: {
+            size: "square"
+          }
+        }),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        return { success: false, fileName, error: `Freepik error: ${res.status} - ${errorText.slice(0, 200)}` };
+      }
+
+      const data = await res.json();
+
+      // Freepik returns base64 or URL
+      const imageData = data?.data?.[0];
+      if (imageData?.base64) {
+        return { success: true, imageUrl: `data:image/png;base64,${imageData.base64}`, fileName };
+      }
+      if (imageData?.url) {
+        return { success: true, imageUrl: imageData.url, fileName };
+      }
+
+      return { success: false, fileName, error: "Freepik não retornou imagem" };
+    } catch (error) {
+      return { success: false, fileName, error: error instanceof Error ? error.message : "Erro Freepik" };
+    }
+  }
+}
+
 export class FreepikService {
   private apiKey: string;
 

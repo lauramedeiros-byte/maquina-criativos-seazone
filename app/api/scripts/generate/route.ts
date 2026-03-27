@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { geminiText, isConfigured } from "@/lib/services/gemini-service";
+import { SEAZONE_BRANDBOOK } from "@/lib/brandbook";
 
 export const maxDuration = 300;
 
@@ -89,6 +90,10 @@ function buildPrompt(
   return `Você é um copywriter especialista em marketing de investimento imobiliário para aluguel por temporada. Gere 45 roteiros de criativos para o SPOT "${nomeSpot}"${localizacao ? `, localizado em ${localizacao}` : ""}.
 
 ${SEAZONE_CONTEXT}
+
+${SEAZONE_BRANDBOOK}
+
+## BRIEFING DO EMPREENDIMENTO:
 
 ## Particularidades deste SPOT — "${nomeSpot}":
 **Localização:** ${localizacao || "A definir"}

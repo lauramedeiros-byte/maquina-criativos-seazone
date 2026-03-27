@@ -312,7 +312,7 @@ export default function Home() {
   }
 
   // ── Production
-  async function handleProduce(script: GeneratedScript, platform: "fal-image" | "fal-video" | "openrouter-image") {
+  async function handleProduce(script: GeneratedScript, platform: "fal-image" | "fal-video" | "openrouter-image" | "freepik-image") {
     setProductionStatus((p) => ({ ...p, [script.id]: { status: "producing", platform } }));
     try {
       const res = await fetch("/api/produce", {
@@ -1123,6 +1123,7 @@ export default function Home() {
                   Gerar estáticos
                 </button>
                 <button onClick={() => handleProduceAll("static", "openrouter-image")} disabled={producingCount > 0} className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-40">Estáticos (Pro)</button>
+                <button onClick={() => handleProduceAll("static", "freepik-image")} disabled={producingCount > 0} className="px-4 py-2 bg-orange-500 text-white text-xs font-semibold rounded-lg hover:bg-orange-600 disabled:opacity-40">Estáticos (Freepik)</button>
                 <button
                   onClick={() => handleProduceAll("video")}
                   disabled={producingCount > 0}
@@ -1200,9 +1201,10 @@ export default function Home() {
                               )}
 
                               {ps.status === "idle" && script.type === "static" && (
-                                <div className="flex gap-1.5">
-                                  <button onClick={() => handleProduce(script, "fal-image")} className="px-3 py-1.5 bg-emerald-500 text-white text-[10px] font-semibold rounded-lg hover:bg-emerald-600 whitespace-nowrap">Fal AI</button>
-                                  <button onClick={() => handleProduce(script, "openrouter-image")} className="px-3 py-1.5 bg-blue-600 text-white text-[10px] font-semibold rounded-lg hover:bg-blue-700 whitespace-nowrap">FLUX Pro</button>
+                                <div className="flex gap-1">
+                                  <button onClick={() => handleProduce(script, "fal-image")} className="px-2.5 py-1.5 bg-emerald-500 text-white text-[9px] font-semibold rounded-lg hover:bg-emerald-600 whitespace-nowrap">Fal AI</button>
+                                  <button onClick={() => handleProduce(script, "openrouter-image")} className="px-2.5 py-1.5 bg-blue-600 text-white text-[9px] font-semibold rounded-lg hover:bg-blue-700 whitespace-nowrap">GPT-5</button>
+                                  <button onClick={() => handleProduce(script, "freepik-image")} className="px-2.5 py-1.5 bg-orange-500 text-white text-[9px] font-semibold rounded-lg hover:bg-orange-600 whitespace-nowrap">Freepik</button>
                                 </div>
                               )}
                               {ps.status === "idle" && script.type !== "static" && (

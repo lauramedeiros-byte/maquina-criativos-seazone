@@ -7,7 +7,9 @@ import {
   uploadToFalStorage,
 } from "@/lib/services/fal-service";
 import { PremiumImageService } from "@/lib/services/openrouter-service";
+import { FreepikImageService } from "@/lib/services/freepik-service";
 import { geminiText } from "@/lib/services/gemini-service";
+import { SEAZONE_BRANDBOOK } from "@/lib/brandbook";
 
 export const maxDuration = 300;
 
@@ -20,7 +22,7 @@ function isImagePath(assetPath: string): boolean {
 interface RequestBody {
   scriptId: number;
   type: "static" | "narrated" | "avatar";
-  platform: "fal-image" | "fal-video" | "openrouter-image";
+  platform: "fal-image" | "fal-video" | "openrouter-image" | "freepik-image";
   script: string;
   copyText?: string;
   imagePrompt: string;
@@ -242,6 +244,31 @@ export async function POST(request: Request) {
           score, scoreReason,
           overlayText: {
             hook: body.hook || title,
+            script: body.copyText || (script.length > 140 ? script.substring(0, 137) + "..." : script),
+            nomeSpot: body.nomeSpot || title,
+            cta: "Fale com a nossa equipe",
+          },
+        });
+      }
+
+      case "freepik-image": {
+        const service = new FreepikImageService();
+        // Include brandbook context in the prompt
+        const freepikPrompt = `${enhancedPrompt}. Follow brand guidelines: dark navy (#011337) and coral (#F1605D) accent colors, clean modern design, professional real estate marketing style.`;
+        const result = await service.generate(freepikPrompt);
+
+        const hookText = body.hook || title;
+        const { score, scoreReason } = await scoreCreative(script, hookText, title, pontosObrigatorios || "");
+
+        return NextResponse.json({
+          scriptId, platform,
+          success: result.success,
+          fileName: result.fileName,
+          imageUrl: result.imageUrl,
+          error: result.error,
+          score, scoreReason,
+          overlayText: {
+            hook: hookText,
             script: body.copyText || (script.length > 140 ? script.substring(0, 137) + "..." : script),
             nomeSpot: body.nomeSpot || title,
             cta: "Fale com a nossa equipe",
