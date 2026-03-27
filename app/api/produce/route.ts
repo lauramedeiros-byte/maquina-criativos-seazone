@@ -63,24 +63,27 @@ interface ScoreResult {
 async function resolveReferenceImageUrl(
   referenceAssets: string[]
 ): Promise<string | undefined> {
-  const firstImage = referenceAssets.find(isImagePath);
-  if (!firstImage) return undefined;
+  // Filter to only image assets
+  const images = referenceAssets.filter(isImagePath);
+  if (images.length === 0) return undefined;
 
-  // If it's already a full URL (http/https), pass it straight to Fal AI
-  if (firstImage.startsWith("http")) {
-    return firstImage;
+  // Pick a random image from the list
+  const randomImage = images[Math.floor(Math.random() * images.length)];
+
+  // If it's already a full URL (http/https), use it directly
+  if (randomImage.startsWith("http")) {
+    return randomImage;
   }
 
-  // Fallback for local dev: relative path → read from disk → upload to Fal storage
-  const relativePath = firstImage.startsWith("/") ? firstImage.slice(1) : firstImage;
+  // If it's a relative path, try to read from disk and upload to Fal
+  const relativePath = randomImage.startsWith("/") ? randomImage.slice(1) : randomImage;
   const absolutePath = path.join(process.cwd(), "public", relativePath);
 
   try {
-    readFileSync(absolutePath); // throws if missing
+    readFileSync(absolutePath);
     const url = await uploadToFalStorage(absolutePath);
     return url;
   } catch {
-    // Asset not found or upload failed — continue without a reference image
     return undefined;
   }
 }

@@ -152,6 +152,7 @@ export default function Home() {
   // ── Assets state
   const [assets, setAssets] = useState<Record<string, Array<{ name: string; path: string; type: string; folder: string }>>>({});
   const [selectedAssets, setSelectedAssets] = useState<string[]>([]);
+  const [backgroundPhotos, setBackgroundPhotos] = useState<string[]>([]);
   const [loadingAssets, setLoadingAssets] = useState(false);
   const [uploadingAssets, setUploadingAssets] = useState(false);
   const [showAssetPanel, setShowAssetPanel] = useState(true);
@@ -327,7 +328,12 @@ export default function Home() {
           copyText: script.layers ? `${script.layers.text.hook}\n${script.layers.text.body}` : script.copyText,
           nomeSpot,
           referenceAssets: (script.layers?.background?.useReference !== false && script.layers?.scenes?.[0]?.useReference !== false)
-            ? selectedAssets.map(p => `${window.location.origin}${p}`)
+            ? (backgroundPhotos.length > 0
+                ? backgroundPhotos.map(p => `${window.location.origin}${p}`)
+                : selectedAssets.filter(p => {
+                    const ext = p.toLowerCase();
+                    return ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.webp');
+                  }).map(p => `${window.location.origin}${p}`))
             : [],
           pontosObrigatorios,
           logoEmpreendimento,
@@ -1157,6 +1163,47 @@ export default function Home() {
                 <button onClick={() => setSelectedAssets([])} className="text-xs text-seazone-secondary hover:underline">Limpar</button>
               </div>
             )}
+
+            {/* ── FOTOS DE FUNDO ── */}
+            <div className="mb-4 bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+              <h3 className="text-sm font-bold text-gray-800 mb-2 flex items-center gap-2">
+                <svg className="w-4 h-4 text-seazone-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                Fotos de Fundo
+                {backgroundPhotos.length > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{backgroundPhotos.length} selecionada(s)</span>}
+              </h3>
+              <p className="text-[11px] text-gray-500 mb-3">Selecione as fotos que devem ser usadas como FUNDO dos criativos. A IA escolherá uma para cada criativo.</p>
+
+              {/* Show all image assets from the loaded assets */}
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(assets).map(([folder, folderAssets]) =>
+                  (folderAssets as any[])
+                    .filter((a: any) => a.type === "image")
+                    .map((asset: any) => {
+                      const isSelected = backgroundPhotos.includes(asset.path);
+                      return (
+                        <button
+                          key={asset.path}
+                          onClick={() => setBackgroundPhotos(prev => isSelected ? prev.filter(p => p !== asset.path) : [...prev, asset.path])}
+                          className={`relative w-20 h-20 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${isSelected ? 'border-emerald-500 ring-2 ring-emerald-300' : 'border-gray-200 hover:border-gray-400'}`}
+                        >
+                          <img src={asset.path} alt={asset.name} className="w-full h-full object-cover" />
+                          {isSelected && (
+                            <div className="absolute inset-0 bg-emerald-500/20 flex items-center justify-center">
+                              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                              </div>
+                            </div>
+                          )}
+                          <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[7px] px-0.5 py-0.5 truncate text-center">{asset.name}</span>
+                        </button>
+                      );
+                    })
+                )}
+                {Object.values(assets).flat().filter((a: any) => a.type === "image").length === 0 && (
+                  <p className="text-xs text-gray-400 italic">Nenhuma foto disponível. Suba fotos nos Assets de Referência.</p>
+                )}
+              </div>
+            </div>
 
             {/* 2-column layout */}
             <div className={`grid gap-6 ${showAssetPanel ? "grid-cols-1 lg:grid-cols-[1fr_340px]" : "grid-cols-1"}`}>
