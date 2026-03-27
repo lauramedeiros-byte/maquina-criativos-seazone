@@ -7,7 +7,13 @@ interface GeneratedScript {
   id: number;
   type: "static" | "narrated" | "avatar";
   title: string;
-  copyText?: string;  // text that goes ON the image
+  layers?: {
+    background: { imagePrompt: string; style: string; useReference: boolean };
+    text: { hook: string; body: string; cta: string };
+    logos: { seazone: boolean; empreendimento: boolean };
+  };
+  // Legacy fields (backward compat)
+  copyText?: string;
   script: string;
   imagePrompt: string;
   hook: string;
@@ -255,12 +261,15 @@ export default function Home() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           scriptId: script.id, type: script.type, platform,
-          script: script.script, copyText: script.copyText,
-          imagePrompt: script.imagePrompt,
-          title: script.title, hook: script.hook,
+          script: script.script,
+          imagePrompt: script.layers?.background.imagePrompt || script.imagePrompt,
+          title: script.title,
+          hook: script.layers?.text.hook || script.hook,
+          copyText: script.layers ? `${script.layers.text.hook}\n${script.layers.text.body}` : script.copyText,
           nomeSpot,
-          referenceAssets: selectedAssets,
+          referenceAssets: (script.layers?.background.useReference !== false) ? selectedAssets : [],
           pontosObrigatorios,
+          logoEmpreendimento,
         }),
       });
       const data = await res.json();
@@ -383,6 +392,20 @@ export default function Home() {
     ctx.letterSpacing = "3px";
     ctx.fillText("SEAZONE", 955, 53);
     ctx.letterSpacing = "0px";
+
+    // Property logo (top left) — if available
+    if (logoEmpreendimento) {
+      try {
+        const logoImg = new Image();
+        logoImg.crossOrigin = "anonymous";
+        logoImg.src = logoEmpreendimento;
+        await new Promise((resolve, reject) => { logoImg.onload = resolve; logoImg.onerror = reject; });
+        // Draw logo maintaining aspect ratio, max height 60px
+        const logoH = 60;
+        const logoW = (logoImg.width / logoImg.height) * logoH;
+        ctx.drawImage(logoImg, 40, 30, logoW, logoH);
+      } catch { /* logo failed to load, skip */ }
+    }
 
     // Hook text
     ctx.textAlign = "left";
@@ -779,8 +802,21 @@ export default function Home() {
                           <h4 className="text-sm font-semibold text-gray-800 mb-1">{script.title}</h4>
                           {script.hook && !isEditing && (
                             <p className="text-xs text-seazone-secondary font-medium mb-1">
-                              <span className="text-gray-400 font-normal">Hook: </span>{script.hook}
+                              <span className="text-gray-400 font-normal">Hook: </span>{script.hook || script.layers?.text.hook}
                             </p>
+                          )}
+                          {script.layers && !isEditing && (
+                            <div className="mt-2 flex gap-2 flex-wrap">
+                              <span className="px-2 py-0.5 rounded text-[9px] bg-blue-50 text-blue-700">
+                                BG: {script.layers.background.style} {script.layers.background.useReference ? "+ ref" : ""}
+                              </span>
+                              <span className="px-2 py-0.5 rounded text-[9px] bg-amber-50 text-amber-700">
+                                Hook: {script.layers.text.hook}
+                              </span>
+                              <span className="px-2 py-0.5 rounded text-[9px] bg-green-50 text-green-700">
+                                CTA: {script.layers.text.cta}
+                              </span>
+                            </div>
                           )}
                           {isEditing ? (
                             <div className="mt-2">
@@ -993,23 +1029,43 @@ export default function Home() {
                                   <img src={ps.resultUrl} alt={script.title} className="w-full block" crossOrigin="anonymous" />
                                   {ps.overlayText && (
                                     <>
-                                      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.88) 100%)" }} />
+                                      {/* LAYER 1: Gradient for text readability */}
+                                      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.88) 100%)" }} />
+
+                                      {/* LAYER 3: Logos */}
+                                      {/* Seazone badge - always top right */}
                                       <div className="absolute top-3 right-3 px-3 py-1 rounded-md text-[10px] font-bold tracking-widest text-white" style={{ backgroundColor: "rgba(31,78,120,0.85)" }}>SEAZONE</div>
-                                      <div className="absolute top-3 left-4 w-12 h-1 rounded" style={{ backgroundColor: "#3B9AE1" }} />
+                                      {/* Empreendimento logo - top left */}
+                                      {logoEmpreendimento && (
+                                        <div className="absolute top-3 left-3">
+                                          <img src={logoEmpreendimento} alt="Logo" className="h-8 w-auto object-contain drop-shadow-lg" />
+                                        </div>
+                                      )}
+                                      {/* Top accent */}
+                                      <div className="absolute top-14 left-4 w-12 h-1 rounded" style={{ backgroundColor: "#3B9AE1" }} />
+
+                                      {/* LAYER 2: Marketing Text */}
+                                      {/* Hook */}
                                       <div className="absolute left-4 right-4" style={{ bottom: "28%" }}>
-                                        <p className="text-white font-extrabold leading-tight drop-shadow-lg" style={{ fontSize: "clamp(18px, 4vw, 32px)", textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>{ps.overlayText.hook}</p>
+                                        <p className="text-white font-extrabold leading-tight drop-shadow-lg" style={{ fontSize: "clamp(18px, 4vw, 32px)", textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>
+                                          {ps.overlayText.hook}
+                                        </p>
                                       </div>
+                                      {/* Body */}
                                       <div className="absolute left-4 right-4" style={{ bottom: "18%" }}>
-                                        <p className="text-white/90 leading-snug drop-shadow" style={{ fontSize: "clamp(10px, 2vw, 16px)", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>{ps.overlayText.script}</p>
+                                        <p className="text-white/90 leading-snug drop-shadow" style={{ fontSize: "clamp(10px, 2vw, 16px)", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
+                                          {ps.overlayText.script}
+                                        </p>
                                       </div>
                                       {/* CTA button */}
-                                      {ps.overlayText?.cta && (
-                                        <div className="absolute left-4 right-4" style={{ bottom: "6%" }}>
+                                      {ps.overlayText.cta && (
+                                        <div className="absolute left-4 right-4" style={{ bottom: "8%" }}>
                                           <div className="inline-block px-5 py-2 rounded-lg text-white font-bold" style={{ backgroundColor: "#3B9AE1", fontSize: "clamp(10px, 1.8vw, 14px)" }}>
                                             {ps.overlayText.cta}
                                           </div>
                                         </div>
                                       )}
+                                      {/* Bottom bar with SPOT name */}
                                       <div className="absolute bottom-0 left-0 right-0 py-1.5 text-center" style={{ backgroundColor: "#1F4E78" }}>
                                         <span className="text-white text-[10px] font-bold tracking-widest">{ps.overlayText.nomeSpot.toUpperCase()}</span>
                                       </div>

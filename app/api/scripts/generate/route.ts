@@ -95,10 +95,9 @@ ${doseDonts ? `## Do's and Don'ts deste empreendimento:\n${doseDonts}\n` : ""}
 ## Distribuição dos 45 criativos:
 
 ### 15 ESTÁTICOS (imagens com texto para feed/stories)
-- Copy curta e impactante (máx 2 frases)
-- Hook visual forte que prende scroll
-- Cada criativo explora um ângulo diferente (rentabilidade, localização, preço, lifestyle do hóspede, gestão Seazone, etc.)
-- Prompt de imagem descritivo para IA geradora (em inglês)
+- Hook visual forte que prende scroll (máx 8 palavras)
+- Corpo de apoio com dado concreto do briefing (máx 2 linhas)
+- Prompt de imagem descritivo para IA geradora (em inglês) — APENAS a cena visual
 - Alguns devem ter tom de urgência/escassez, outros educativo, outros aspiracional
 
 ### 15 NARRADOS (vídeo com voz over)
@@ -122,11 +121,24 @@ Responda EXATAMENTE neste formato JSON (sem markdown, sem \`\`\`):
   {
     "id": 1,
     "type": "static",
-    "title": "título curto do criativo",
-    "copyText": "APENAS o texto de marketing que aparece NA IMAGEM. Máximo 2 frases curtas. Sem descrições visuais.",
-    "script": "roteiro completo incluindo descrições visuais e direcionamentos",
-    "imagePrompt": "prompt em inglês para gerar imagem com IA",
-    "hook": "frase de gancho/abertura"
+    "title": "título curto",
+    "layers": {
+      "background": {
+        "imagePrompt": "Detailed English prompt for AI image generation. Describe ONLY the visual scene: building facade, aerial view, beach, interior, etc. NO text, NO logos, NO overlays.",
+        "style": "photo | render | aerial | lifestyle",
+        "useReference": true
+      },
+      "text": {
+        "hook": "Frase de gancho curta e impactante (máx 8 palavras)",
+        "body": "Frase de apoio com dado concreto do briefing (máx 2 linhas)",
+        "cta": "Fale com a nossa equipe"
+      },
+      "logos": {
+        "seazone": true,
+        "empreendimento": true
+      }
+    },
+    "script": "Roteiro interno completo com direcionamentos visuais, tom, etc."
   },
   ...mais 44 objetos
 ]
@@ -135,14 +147,31 @@ IDs de 1 a 45. Tipos: 1-15 = "static", 16-30 = "narrated", 31-45 = "avatar".
 Cada roteiro DEVE SER ÚNICO — explore diferentes ângulos, objeções, benefícios e emoções.
 NUNCA repita a mesma estrutura de frase ou abordagem entre roteiros do mesmo tipo.
 
-IMPORTANTE sobre copyText vs script:
-- copyText = APENAS o texto que o ESPECTADOR vai ler na imagem. Curto, impactante, direto.
-- script = roteiro completo com direcionamentos visuais, tom, instruções (uso interno).
-- NÃO misture descrições visuais no copyText. O copyText é PURO texto de marketing.
-- Exemplo correto de copyText: "ROI de 16,4% ao ano. Novo Campeche SPOT II — seu investimento inteligente em Floripa."
-- Exemplo ERRADO de copyText: "Visualmente, mostre a fachada do empreendimento com texto de ROI..."
+## Instruções de preenchimento das camadas:
+- layers.background.imagePrompt: APENAS descreve a cena visual para geração de imagem por IA. DEVE estar em inglês. Deve referenciar as características reais do empreendimento (localização, estilo de fachada, arredores).
+- layers.background.style: um de "photo" (fotorrealista), "render" (render arquitetônico 3D), "aerial" (vista de drone), "lifestyle" (pessoas/cena de lifestyle)
+- layers.background.useReference: true se a imagem deve usar os assets de referência do empreendimento (fachada, fotos)
+- layers.text.hook: o texto BIG e em negrito (máx 8 palavras, impactante, chama atenção)
+- layers.text.body: texto de apoio com dados reais do briefing (ROI, preço, renda de aluguel, etc.)
+- layers.text.cta: SEMPRE "Fale com a nossa equipe" para estáticos
+- layers.logos.seazone: sempre true
+- layers.logos.empreendimento: true para imagens estáticas
+- script: roteiro interno completo com direções visuais (NÃO aparece para o espectador)
 
-OBRIGATÓRIO: Todo criativo DEVE terminar com um CTA. Para estáticos, inclua "Fale com a nossa equipe" no copyText.`;
+REGRA CRÍTICA DE SEPARAÇÃO DE CAMADAS:
+1. layers.background.imagePrompt = APENAS a cena visual (prédio, praia, drone). NUNCA inclua texto, logos, ou overlays.
+2. layers.text = APENAS o texto de marketing que o espectador lê. NUNCA inclua descrições visuais aqui.
+3. layers.logos = quais logos aparecem (Seazone sempre, empreendimento quando aplicável).
+4. script = uso interno, NÃO aparece no criativo final.
+
+EXEMPLOS:
+✅ CORRETO - hook: "Seu ROI em Floripa"
+✅ CORRETO - body: "16,4% ao ano. Novo Campeche SPOT II."
+✅ CORRETO - imagePrompt: "Modern beachfront apartment building with tropical vegetation, Campeche beach Florianopolis, aerial drone view, golden hour, professional real estate photography"
+❌ ERRADO - hook: "Visualmente, mostre a fachada do empreendimento com ROI"
+❌ ERRADO - imagePrompt: "Image with text showing ROI 16.4% and Seazone logo"
+
+OBRIGATÓRIO: Todo criativo DEVE terminar com um CTA. Para estáticos, layers.text.cta = "Fale com a nossa equipe".`;
 }
 
 function parseScriptsResponse(text: string) {
@@ -184,16 +213,96 @@ function generateDemoScripts(nomeSpot: string, localizacao: string, pontosObriga
       ];
 
   const staticAngles = [
-    { title: "Rentabilidade", hook: "Seu imóvel pode render mais que a poupança.", copyText: `${nomeSpot}: investimento a preço de custo em ${loc}. Fale com a nossa equipe.`, script: `${nomeSpot}: investimento a preço de custo em ${loc}. Seu imóvel trabalhando por você 365 dias por ano. Visualmente, imagem do empreendimento com destaque para rentabilidade.` },
-    { title: "Preço de Custo", hook: "Preço de custo. Sem intermediário.", copyText: `Direto na planta, a preço de custo. Menos investimento, mais retorno. Fale com a nossa equipe.`, script: `Investir no ${nomeSpot} é comprar direto na planta, a preço de custo. Menos investimento, mais retorno. Mostrar planta do empreendimento.` },
-    { title: "Localização", hook: `${loc}: onde turista não para de chegar.`, copyText: `${nomeSpot} em ${loc} — alta demanda de aluguel por temporada. Fale com a nossa equipe.`, script: `O ${nomeSpot} está em ${loc} — uma das regiões com maior demanda de aluguel por temporada do Brasil. Imagem aérea da localização.` },
-    { title: "Gestão Seazone", hook: "Renda sem dor de cabeça.", copyText: `Compre o ${nomeSpot}. A Seazone cuida do resto. Fale com a nossa equipe.`, script: `Compre o ${nomeSpot}. A Seazone cuida do resto — hóspedes, limpeza, manutenção, tudo. Você só recebe. Mostrar app de gestão.` },
-    { title: "Compacto e Inteligente", hook: "Menor ticket. Maior retorno.", copyText: `${nomeSpot}: menor investimento, maior retorno por m². Fale com a nossa equipe.`, script: `Imóvel compacto = investimento menor. No ${nomeSpot}, cada metro quadrado foi pensado para maximizar ocupação e rentabilidade. Planta inteligente.` },
-    { title: "Otimizado para Airbnb", hook: "Projetado para ser Airbnb desde o dia 1.", copyText: `${nomeSpot}: nasceu para aluguel por temporada. Cada detalhe pensado para o hóspede. Fale com a nossa equipe.`, script: `Diferente de qualquer imóvel, o ${nomeSpot} nasceu para aluguel por temporada. Cada detalhe pensado para o hóspede. Interior moderno e funcional.` },
-    { title: "Investimento Inteligente", hook: "Enquanto você dorme, seu SPOT rende.", copyText: `${nomeSpot}: renda passiva real em ${loc}. Fale com a nossa equipe.`, script: `${nomeSpot}: o investimento inteligente em ${loc}. Renda passiva real, sem complicação. Mostrar gráfico de crescimento.` },
-    { title: "Alta Ocupação", hook: "Região com ocupação acima de 70%.", copyText: `${loc} é destino o ano inteiro. ${nomeSpot} aproveita cada temporada. Fale com a nossa equipe.`, script: `${loc} é destino o ano inteiro. O ${nomeSpot} aproveita cada temporada para gerar renda para você. Imagem da região turística.` },
-    { title: "Escassez", hook: "Últimas unidades a preço de lançamento.", copyText: `${nomeSpot}: preço de custo é agora. Depois, só valoriza. Fale com a nossa equipe.`, script: `O ${nomeSpot} está em fase de lançamento. Preço de custo é agora — depois, só valoriza. Urgência visual com contador.` },
-    { title: "Sem Burocracia", hook: "Investir em imóvel nunca foi tão simples.", copyText: `SPOT ${nomeSpot} + gestão Seazone = renda passiva sem burocracia. Fale com a nossa equipe.`, script: `SPOT ${nomeSpot} + gestão Seazone = renda passiva sem burocracia. Simples assim. Ícones de processo simplificado.` },
+    {
+      title: "Rentabilidade",
+      layers: {
+        background: { imagePrompt: `Modern compact vacation rental apartment building, ${loc}, tropical vegetation, professional real estate photography, golden hour, clean facade`, style: "photo", useReference: true },
+        text: { hook: `Seu imóvel pode render mais que a poupança.`, body: `${nomeSpot}: investimento a preço de custo em ${loc}.`, cta: "Fale com a nossa equipe" },
+        logos: { seazone: true, empreendimento: true },
+      },
+      script: `${nomeSpot}: investimento a preço de custo em ${loc}. Seu imóvel trabalhando por você 365 dias por ano. Visualmente, imagem do empreendimento com destaque para rentabilidade.`,
+    },
+    {
+      title: "Preço de Custo",
+      layers: {
+        background: { imagePrompt: `Architectural render of modern apartment building floor plan, clean minimal design, investment property, professional visualization`, style: "render", useReference: true },
+        text: { hook: "Preço de custo. Sem intermediário.", body: `Direto na planta, a preço de custo. Menos investimento, mais retorno.`, cta: "Fale com a nossa equipe" },
+        logos: { seazone: true, empreendimento: true },
+      },
+      script: `Investir no ${nomeSpot} é comprar direto na planta, a preço de custo. Menos investimento, mais retorno. Mostrar planta do empreendimento.`,
+    },
+    {
+      title: "Localização",
+      layers: {
+        background: { imagePrompt: `Aerial drone view of ${loc}, tourist destination, beaches, city, vacation destination, beautiful landscape, golden hour`, style: "aerial", useReference: false },
+        text: { hook: `${loc}: onde turista não para de chegar.`, body: `${nomeSpot} em ${loc} — alta demanda de aluguel por temporada.`, cta: "Fale com a nossa equipe" },
+        logos: { seazone: true, empreendimento: true },
+      },
+      script: `O ${nomeSpot} está em ${loc} — uma das regiões com maior demanda de aluguel por temporada do Brasil. Imagem aérea da localização.`,
+    },
+    {
+      title: "Gestão Seazone",
+      layers: {
+        background: { imagePrompt: `Modern smartphone showing property management app dashboard, clean desk, professional setting, soft lighting, investment lifestyle`, style: "lifestyle", useReference: false },
+        text: { hook: "Renda sem dor de cabeça.", body: `Compre o ${nomeSpot}. A Seazone cuida do resto.`, cta: "Fale com a nossa equipe" },
+        logos: { seazone: true, empreendimento: true },
+      },
+      script: `Compre o ${nomeSpot}. A Seazone cuida do resto — hóspedes, limpeza, manutenção, tudo. Você só recebe. Mostrar app de gestão.`,
+    },
+    {
+      title: "Compacto e Inteligente",
+      layers: {
+        background: { imagePrompt: `Modern compact studio apartment interior, well-designed small space, vacation rental ready, clean aesthetic, natural light, ${loc}`, style: "lifestyle", useReference: true },
+        text: { hook: "Menor ticket. Maior retorno.", body: `${nomeSpot}: menor investimento, maior retorno por m².`, cta: "Fale com a nossa equipe" },
+        logos: { seazone: true, empreendimento: true },
+      },
+      script: `Imóvel compacto = investimento menor. No ${nomeSpot}, cada metro quadrado foi pensado para maximizar ocupação e rentabilidade. Planta inteligente.`,
+    },
+    {
+      title: "Otimizado para Airbnb",
+      layers: {
+        background: { imagePrompt: `Modern vacation rental apartment interior, stylish furniture, Airbnb-ready design, cozy atmosphere, ${loc} style, professional interior photography`, style: "lifestyle", useReference: true },
+        text: { hook: "Projetado para ser Airbnb desde o dia 1.", body: `${nomeSpot}: nasceu para aluguel por temporada. Cada detalhe pensado para o hóspede.`, cta: "Fale com a nossa equipe" },
+        logos: { seazone: true, empreendimento: true },
+      },
+      script: `Diferente de qualquer imóvel, o ${nomeSpot} nasceu para aluguel por temporada. Cada detalhe pensado para o hóspede. Interior moderno e funcional.`,
+    },
+    {
+      title: "Investimento Inteligente",
+      layers: {
+        background: { imagePrompt: `Modern apartment building exterior at dusk, city lights, ${loc}, real estate investment, architectural photography, clean lines`, style: "photo", useReference: true },
+        text: { hook: "Enquanto você dorme, seu SPOT rende.", body: `${nomeSpot}: renda passiva real em ${loc}.`, cta: "Fale com a nossa equipe" },
+        logos: { seazone: true, empreendimento: true },
+      },
+      script: `${nomeSpot}: o investimento inteligente em ${loc}. Renda passiva real, sem complicação. Mostrar gráfico de crescimento.`,
+    },
+    {
+      title: "Alta Ocupação",
+      layers: {
+        background: { imagePrompt: `Busy tourist beach in ${loc}, many visitors, summer season, aerial view, vibrant colors, high season tourism`, style: "aerial", useReference: false },
+        text: { hook: "Região com ocupação acima de 70%.", body: `${loc} é destino o ano inteiro. ${nomeSpot} aproveita cada temporada.`, cta: "Fale com a nossa equipe" },
+        logos: { seazone: true, empreendimento: true },
+      },
+      script: `${loc} é destino o ano inteiro. O ${nomeSpot} aproveita cada temporada para gerar renda para você. Imagem da região turística.`,
+    },
+    {
+      title: "Escassez",
+      layers: {
+        background: { imagePrompt: `Apartment building construction site at sunset, modern architecture, investment opportunity, ${loc}, real estate development`, style: "render", useReference: true },
+        text: { hook: "Últimas unidades a preço de lançamento.", body: `${nomeSpot}: preço de custo é agora. Depois, só valoriza.`, cta: "Fale com a nossa equipe" },
+        logos: { seazone: true, empreendimento: true },
+      },
+      script: `O ${nomeSpot} está em fase de lançamento. Preço de custo é agora — depois, só valoriza. Urgência visual com contador.`,
+    },
+    {
+      title: "Sem Burocracia",
+      layers: {
+        background: { imagePrompt: `Relaxed investor checking phone on terrace, modern building background, ${loc}, lifestyle photography, soft natural light`, style: "lifestyle", useReference: false },
+        text: { hook: "Investir em imóvel nunca foi tão simples.", body: `SPOT ${nomeSpot} + gestão Seazone = renda passiva sem burocracia.`, cta: "Fale com a nossa equipe" },
+        logos: { seazone: true, empreendimento: true },
+      },
+      script: `SPOT ${nomeSpot} + gestão Seazone = renda passiva sem burocracia. Simples assim. Ícones de processo simplificado.`,
+    },
   ];
 
   const narratedAngles = [
@@ -220,10 +329,16 @@ function generateDemoScripts(nomeSpot: string, localizacao: string, pontosObriga
       id: i + 1,
       type: "static",
       title: `Estático — ${angle.title}`,
-      copyText: angle.copyText,
+      layers: {
+        background: {
+          imagePrompt: `${angle.layers.background.imagePrompt}, ${ponto.toLowerCase()}`,
+          style: angle.layers.background.style,
+          useReference: angle.layers.background.useReference,
+        },
+        text: angle.layers.text,
+        logos: angle.layers.logos,
+      },
       script: angle.script,
-      imagePrompt: `Modern compact vacation rental apartment, ${nomeSpot}, ${loc}, ${ponto.toLowerCase()}, clean minimal design, investment property, aerial view of tourist region, professional real estate photography, 4K`,
-      hook: angle.hook,
     });
   }
 
@@ -235,10 +350,20 @@ function generateDemoScripts(nomeSpot: string, localizacao: string, pontosObriga
       id: 16 + i,
       type: "narrated",
       title: `Narrado — ${angle.title}`,
-      copyText: angle.script,
+      layers: {
+        background: {
+          imagePrompt: `Cinematic drone shot, vacation rental property, ${nomeSpot}, ${loc}, ${ponto.toLowerCase()}, tourist destination, golden hour, lifestyle`,
+          style: "aerial",
+          useReference: true,
+        },
+        text: {
+          hook: angle.hook,
+          body: angle.script.substring(0, 80) + "...",
+          cta: "Fale com a nossa equipe",
+        },
+        logos: { seazone: true, empreendimento: false },
+      },
       script: angle.script,
-      imagePrompt: `Cinematic drone shot, vacation rental property, ${nomeSpot}, ${loc}, ${ponto.toLowerCase()}, tourist destination, golden hour, lifestyle`,
-      hook: angle.hook,
     });
   }
 
@@ -249,10 +374,20 @@ function generateDemoScripts(nomeSpot: string, localizacao: string, pontosObriga
       id: 31 + i,
       type: "avatar",
       title: `Apresentadora — ${angle.title}`,
-      copyText: angle.script,
+      layers: {
+        background: {
+          imagePrompt: `Clean modern background for presenter, vacation rental property showcase, ${nomeSpot}, ${loc}, professional studio setting`,
+          style: "lifestyle",
+          useReference: false,
+        },
+        text: {
+          hook: angle.hook,
+          body: angle.script.substring(0, 80) + "...",
+          cta: "Fale com a nossa equipe",
+        },
+        logos: { seazone: true, empreendimento: false },
+      },
       script: angle.script,
-      imagePrompt: `Clean modern background for presenter, vacation rental property showcase, ${nomeSpot}, ${loc}, professional`,
-      hook: angle.hook,
     });
   }
 

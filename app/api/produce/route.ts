@@ -30,6 +30,7 @@ interface RequestBody {
   descricaoVisual?: string;
   referenceAssets?: string[]; // e.g. ["/assets/fachada/render1.png"]
   pontosObrigatorios?: string;
+  logoEmpreendimento?: string;
 }
 
 interface ScoreResult {
@@ -170,7 +171,7 @@ export async function POST(request: Request) {
           scoreReason,
           // Text metadata for frontend overlay
           overlayText: {
-            hook: hookText,
+            hook: body.hook || title,
             script: body.copyText || (script.length > 140 ? script.substring(0, 137) + "..." : script),
             nomeSpot: body.nomeSpot || title,
             cta: "Fale com a nossa equipe",
@@ -221,7 +222,7 @@ export async function POST(request: Request) {
           error: result.error,
           score, scoreReason,
           overlayText: {
-            hook: hookText,
+            hook: body.hook || title,
             script: body.copyText || (script.length > 140 ? script.substring(0, 137) + "..." : script),
             nomeSpot: body.nomeSpot || title,
             cta: "Fale com a nossa equipe",
