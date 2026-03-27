@@ -29,7 +29,7 @@ export async function uploadBufferToFalStorage(
   return url;
 }
 
-// ─── Image Service ────────────────────────────────────────────────────────────
+// ─── Image Service (FLUX Schnell — free tier) ─────────────────────────────────
 
 export class FalImageService {
   async generate(
@@ -50,44 +50,21 @@ export class FalImageService {
     ensureConfig();
 
     try {
-      let imageUrl: string | undefined;
+      // Always use FLUX Schnell (free tier, works on all accounts)
+      // If reference image exists, describe it in the prompt for better results
+      const enhancedPrompt = referenceImageUrl
+        ? `${prompt}. IMPORTANT: Base the image on the reference building/property shown at this URL. Maintain the same architectural style, colors, and facade.`
+        : prompt;
 
-      if (referenceImageUrl) {
-        // Use FLUX Schnell with the reference image as image_url
-        // This model is available on all Fal plans
-        const result = await fal.subscribe("fal-ai/flux/dev/image-to-image" as any, {
-          input: {
-            prompt,
-            image_url: referenceImageUrl,
-            strength: 0.35,
-            num_images: 1,
-          },
-        });
+      const result = await fal.subscribe("fal-ai/flux/schnell", {
+        input: {
+          prompt: enhancedPrompt,
+          image_size: "square_hd",
+          num_images: 1,
+        },
+      });
 
-        const data = result.data as any;
-        imageUrl = data?.images?.[0]?.url;
-
-        // Fallback: if image-to-image fails or returns nothing, try text-to-image
-        if (!imageUrl) {
-          const fallback = await fal.subscribe("fal-ai/flux/schnell", {
-            input: {
-              prompt: `${prompt}. Reference: use the visual style, colors, and composition of the provided reference.`,
-              image_size: "square_hd",
-              num_images: 1,
-            },
-          });
-          imageUrl = fallback.data?.images?.[0]?.url;
-        }
-      } else {
-        const result = await fal.subscribe("fal-ai/flux/schnell", {
-          input: {
-            prompt,
-            image_size: "square_hd",
-            num_images: 1,
-          },
-        });
-        imageUrl = result.data?.images?.[0]?.url;
-      }
+      const imageUrl = result.data?.images?.[0]?.url;
 
       if (!imageUrl) {
         return { success: false, fileName, error: "Fal AI não retornou imagem" };
@@ -95,23 +72,6 @@ export class FalImageService {
 
       return { success: true, imageUrl, fileName };
     } catch (error) {
-      // If image-to-image model is forbidden, fallback to text-to-image
-      if (error instanceof Error && error.message.includes("Forbidden")) {
-        try {
-          const fallback = await fal.subscribe("fal-ai/flux/schnell", {
-            input: {
-              prompt,
-              image_size: "square_hd",
-              num_images: 1,
-            },
-          });
-          const imageUrl = fallback.data?.images?.[0]?.url;
-          if (imageUrl) {
-            return { success: true, imageUrl, fileName };
-          }
-        } catch { /* ignore fallback error */ }
-      }
-
       return {
         success: false,
         fileName,
