@@ -59,6 +59,8 @@ export class PremiumImageService {
     // Build messages with optional reference image
     const userContent: any[] = [];
 
+    const noTextRule = "CRITICAL RULE: The generated image must contain ZERO text, ZERO words, ZERO letters, ZERO numbers, ZERO logos, ZERO watermarks, ZERO labels, ZERO captions. Generate ONLY a clean photograph with NO text of any kind anywhere in the image.";
+
     if (referenceImageUrl) {
       userContent.push({
         type: "image_url",
@@ -66,12 +68,12 @@ export class PremiumImageService {
       });
       userContent.push({
         type: "text",
-        text: `Use this building/property as the MAIN visual reference. Keep the exact same facade, architecture, and colors. Generate a professional real estate marketing image based on this building. Additional instructions: ${prompt}`
+        text: `Use this building/property as the MAIN visual reference. Keep the exact same facade, architecture, and colors. Generate a clean professional real estate photograph based on this building. ${noTextRule} Additional visual instructions: ${prompt}`
       });
     } else {
       userContent.push({
         type: "text",
-        text: prompt
+        text: `${prompt} ${noTextRule}`
       });
     }
 

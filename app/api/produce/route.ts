@@ -160,10 +160,13 @@ export async function POST(request: Request) {
     referenceImageUrl = await resolveReferenceImageUrl(referenceAssets);
   }
 
-  // When we have a reference image, prompt must reinforce keeping the same building/scene
+  // CRITICAL: Tell AI to generate ONLY the visual scene — NO text, NO logos, NO overlays
+  // Text and logos are added by the frontend CSS overlay
+  const noTextInstruction = "IMPORTANT: Generate ONLY the photographic scene. Do NOT include ANY text, words, letters, numbers, logos, watermarks, labels, captions, or overlay elements in the image. The image must be a CLEAN photograph with ZERO text of any kind.";
+
   const enhancedPrompt = referenceImageUrl
-    ? `Keep this exact same building, facade, architecture, and scene. Only add professional marketing overlay elements: subtle gradient at bottom for text space, clean modern typography area. Do not change the building or environment. ${basePrompt}. Real estate social media ad for "${title}".`
-    : `Professional real estate marketing creative for "${title}". ${basePrompt}. Style: modern social media ad, clean typography overlay space, high-end real estate investment marketing.`;
+    ? `Keep this exact same building, facade, architecture, and scene from the reference photo. ${noTextInstruction} ${basePrompt}. Professional real estate photography.`
+    : `${basePrompt}. ${noTextInstruction} Professional real estate photography for "${title}".`;
 
   try {
     switch (platform) {
