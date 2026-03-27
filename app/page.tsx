@@ -96,6 +96,17 @@ function FormTextArea({ label, value, onChange, placeholder, hint, rows = 4 }: {
   );
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────
+async function imageUrlToBase64(url: string): Promise<string> {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.readAsDataURL(blob);
+  });
+}
+
 // ─── Main ─────────────────────────────────────────────────────────
 export default function Home() {
   const [step, setStep] = useState<Step>("briefing");
@@ -317,6 +328,21 @@ export default function Home() {
   async function handleProduce(script: GeneratedScript, platform: "fal-image" | "fal-video" | "openrouter-image" | "freepik-image" | "freepik-video") {
     setProductionStatus((p) => ({ ...p, [script.id]: { status: "producing", platform } }));
     try {
+      // Convert background photo to base64 so the AI gets the actual image data
+      let backgroundImageBase64: string | undefined;
+      const bgPhotos = backgroundPhotos.length > 0
+        ? backgroundPhotos
+        : selectedAssets.filter(p => /\.(png|jpg|jpeg|webp)$/i.test(p));
+
+      if (bgPhotos.length > 0) {
+        try {
+          // Pick a random photo for this creative
+          const randomPhoto = bgPhotos[Math.floor(Math.random() * bgPhotos.length)];
+          const photoUrl = randomPhoto.startsWith("http") ? randomPhoto : `${window.location.origin}${randomPhoto}`;
+          backgroundImageBase64 = await imageUrlToBase64(photoUrl);
+        } catch { /* continue without background */ }
+      }
+
       const res = await fetch("/api/produce", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -327,14 +353,7 @@ export default function Home() {
           hook: script.layers?.text.hook || script.hook,
           copyText: script.layers ? `${script.layers.text.hook}\n${script.layers.text.body}` : script.copyText,
           nomeSpot,
-          referenceAssets: (script.layers?.background?.useReference !== false && script.layers?.scenes?.[0]?.useReference !== false)
-            ? (backgroundPhotos.length > 0
-                ? backgroundPhotos.map(p => `${window.location.origin}${p}`)
-                : selectedAssets.filter(p => {
-                    const ext = p.toLowerCase();
-                    return ext.endsWith('.png') || ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.webp');
-                  }).map(p => `${window.location.origin}${p}`))
-            : [],
+          backgroundImageBase64,  // base64 of the background photo
           pontosObrigatorios,
           logoEmpreendimento,
           scenes: script.layers?.scenes,
@@ -1214,6 +1233,29 @@ export default function Home() {
                       );
                     })
                 )}
+                {/* Upload new background photos */}
+                <label className="relative w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:border-emerald-400 hover:bg-emerald-50/30 transition">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                  <span className="text-[8px] text-gray-400 mt-0.5">Adicionar</span>
+                  <input type="file" multiple accept="image/*" className="hidden" onChange={async (e) => {
+                    if (!e.target.files?.length) return;
+                    const formData = new FormData();
+                    formData.append("folder", "fundos");
+                    for (const file of Array.from(e.target.files)) {
+                      formData.append("files", file);
+                    }
+                    try {
+                      const res = await fetch("/api/assets/upload", { method: "POST", body: formData });
+                      const data = await res.json();
+                      if (data.saved) {
+                        // Auto-select the newly uploaded photos
+                        setBackgroundPhotos(prev => [...prev, ...data.saved]);
+                        // Refresh asset list
+                        await loadAssets();
+                      }
+                    } catch { /* ignore */ }
+                  }} />
+                </label>
                 {Object.values(assets).flat().filter((a: any) => a.type === "image").length === 0 && (
                   <p className="text-xs text-gray-400 italic">Nenhuma foto disponível. Suba fotos nos Assets de Referência.</p>
                 )}

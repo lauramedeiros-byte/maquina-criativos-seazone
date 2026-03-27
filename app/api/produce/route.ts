@@ -30,7 +30,7 @@ interface RequestBody {
   hook?: string;
   nomeSpot?: string;
   descricaoVisual?: string;
-  referenceAssets?: string[]; // e.g. ["/assets/fachada/render1.png"]
+  backgroundImageBase64?: string; // base64 data URL of the selected background photo
   pontosObrigatorios?: string;
   logoEmpreendimento?: string;
   scenes?: Array<{
@@ -148,7 +148,6 @@ export async function POST(request: Request) {
     imagePrompt,
     title,
     descricaoVisual,
-    referenceAssets,
     pontosObrigatorios,
   } = body;
 
@@ -157,10 +156,23 @@ export async function POST(request: Request) {
     ? `${imagePrompt}. Visual style: ${descricaoVisual}`
     : imagePrompt;
 
-  // Resolve reference image once — used by both image and video branches
+  // Use the base64 background image if provided
   let referenceImageUrl: string | undefined;
-  if (referenceAssets && referenceAssets.length > 0) {
-    referenceImageUrl = await resolveReferenceImageUrl(referenceAssets);
+  if (body.backgroundImageBase64) {
+    // For Fal AI: upload the base64 to Fal storage first
+    if (platform === "fal-image" || platform === "fal-video") {
+      try {
+        const base64Data = body.backgroundImageBase64.split(",")[1];
+        if (base64Data) {
+          const buffer = Buffer.from(base64Data, "base64");
+          const { uploadBufferToFalStorage } = await import("@/lib/services/fal-service");
+          referenceImageUrl = await uploadBufferToFalStorage(buffer, `bg_${Date.now()}.png`);
+        }
+      } catch { /* continue without reference */ }
+    } else {
+      // For OpenRouter/GPT-5: pass base64 directly (it supports data URLs)
+      referenceImageUrl = body.backgroundImageBase64;
+    }
   }
 
   // CRITICAL: Tell AI to generate ONLY the visual scene — NO text, NO logos, NO overlays
