@@ -107,12 +107,19 @@ export default function Home() {
   const [lovableUrl, setLovableUrl] = useState("");
   const [pontosObrigatorios, setPontosObrigatorios] = useState("");
   const [doseDonts, setDoseDonts] = useState("");
-  // ── Video briefing state
+  // ── Video briefing
+  const [videoTypes, setVideoTypes] = useState<{ narrado: boolean; apresentadora: boolean }>({ narrado: true, apresentadora: true });
   const [videoDuration, setVideoDuration] = useState("15");
   const [videoTom, setVideoTom] = useState("");
   const [videoReferenceNotes, setVideoReferenceNotes] = useState("");
+  // Presenter specific
   const [presentadoraNome, setPresentadoraNome] = useState("Mônica");
   const [presentadoraEstilo, setPresentadoraEstilo] = useState("");
+  // Video assets (separate from image assets)
+  const [narradoAssets, setNarradoAssets] = useState<File[]>([]);
+  const [narradoAssetPreviews, setNarradoAssetPreviews] = useState<string[]>([]);
+  const [apresentadoraClips, setApresentadoraClips] = useState<File[]>([]);
+  const [apresentadoraClipPreviews, setApresentadoraClipPreviews] = useState<string[]>([]);
   const [logoEmpreendimento, setLogoEmpreendimento] = useState<string>("");
   const [lovableData, setLovableData] = useState<Record<string, unknown> | null>(null);
   const [lovableImported, setLovableImported] = useState(false);
@@ -241,6 +248,26 @@ export default function Home() {
       } catch { /* continue anyway */ }
     }
 
+    // Upload narrado assets
+    if (narradoAssets.length > 0) {
+      const formData = new FormData();
+      formData.append("folder", "video-narrado");
+      for (const file of narradoAssets) formData.append("files", file);
+      try {
+        await fetch("/api/assets/upload", { method: "POST", body: formData });
+      } catch { /* continue */ }
+    }
+
+    // Upload apresentadora clips
+    if (apresentadoraClips.length > 0) {
+      const formData = new FormData();
+      formData.append("folder", "video-apresentadora");
+      for (const file of apresentadoraClips) formData.append("files", file);
+      try {
+        await fetch("/api/assets/upload", { method: "POST", body: formData });
+      } catch { /* continue */ }
+    }
+
     try {
       const res = await fetch("/api/scripts/generate", {
         method: "POST",
@@ -253,13 +280,16 @@ export default function Home() {
           lovableData,
           // Video briefing
           videoBriefing: {
+            types: videoTypes,
             duration: videoDuration,
             tom: videoTom,
             referenceNotes: videoReferenceNotes,
-            presentadora: {
+            presentadora: videoTypes.apresentadora ? {
               nome: presentadoraNome,
               estilo: presentadoraEstilo,
-            },
+            } : undefined,
+            narradoAssetCount: narradoAssets.length,
+            apresentadoraClipCount: apresentadoraClips.length,
           },
         }),
       });
@@ -664,65 +694,154 @@ export default function Home() {
             </div>
 
             {/* ── BRIEFING DE VÍDEO ── */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-              <h2 className="text-base font-bold text-gray-800 mb-1 flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                </div>
-                Briefing de Vídeo
-              </h2>
-              <p className="text-xs text-gray-500 mb-4">Configurações para os vídeos narrados e com apresentadora. Suba vídeos de referência nos Assets acima.</p>
+<div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+  <h2 className="text-base font-bold text-gray-800 mb-1 flex items-center gap-2">
+    <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center">
+      <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+    </div>
+    Briefing de Vídeo
+  </h2>
+  <p className="text-xs text-gray-500 mb-4">Selecione os tipos de vídeo e forneça os assets específicos para cada tipo.</p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Duração alvo</label>
-                  <select
-                    value={videoDuration}
-                    onChange={(e) => setVideoDuration(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:ring-2 focus:ring-seazone-accent focus:border-transparent outline-none"
-                  >
-                    <option value="15">15 segundos (Reels/Stories)</option>
-                    <option value="30">30 segundos (Feed/Ads)</option>
-                    <option value="60">60 segundos (YouTube/Landing)</option>
-                  </select>
-                </div>
-                <FormInput
-                  label="Tom dos vídeos"
-                  value={videoTom}
-                  onChange={setVideoTom}
-                  placeholder="Ex: Profissional mas acessível, investidor conversa com investidor"
-                  hint="Como deve soar a narração e o tom geral"
-                />
+  {/* Type selection */}
+  <div className="flex gap-3 mb-5">
+    <button
+      type="button"
+      onClick={() => setVideoTypes(v => ({ ...v, narrado: !v.narrado }))}
+      className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${videoTypes.narrado ? 'border-violet-500 bg-violet-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${videoTypes.narrado ? 'border-violet-500 bg-violet-500' : 'border-gray-300'}`}>
+          {videoTypes.narrado && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+        </div>
+        <span className="font-semibold text-sm text-gray-800">Vídeo Narrado</span>
+      </div>
+      <p className="text-[11px] text-gray-500 ml-7">Sem apresentador. Imagens animadas da cidade, empreendimento, drone, praia. Voz over narra.</p>
+    </button>
+    <button
+      type="button"
+      onClick={() => setVideoTypes(v => ({ ...v, apresentadora: !v.apresentadora }))}
+      className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${videoTypes.apresentadora ? 'border-violet-500 bg-violet-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${videoTypes.apresentadora ? 'border-violet-500 bg-violet-500' : 'border-gray-300'}`}>
+          {videoTypes.apresentadora && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+        </div>
+        <span className="font-semibold text-sm text-gray-800">Vídeo Apresentadora</span>
+      </div>
+      <p className="text-[11px] text-gray-500 ml-7">Apresentadora fala direto com a câmera. Imagens do empreendimento intercaladas.</p>
+    </button>
+  </div>
+
+  {/* Common settings */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">Duração alvo</label>
+      <select value={videoDuration} onChange={(e) => setVideoDuration(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:ring-2 focus:ring-seazone-accent focus:border-transparent outline-none">
+        <option value="15">15 segundos (Reels/Stories)</option>
+        <option value="30">30 segundos (Feed/Ads)</option>
+        <option value="60">60 segundos (YouTube/Landing)</option>
+      </select>
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">Tom geral</label>
+      <input type="text" value={videoTom} onChange={(e) => setVideoTom(e.target.value)} placeholder="Ex: Profissional, investidor conversa com investidor" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:ring-2 focus:ring-seazone-accent focus:border-transparent outline-none" />
+    </div>
+  </div>
+
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-700 mb-1">Referência de estilo</label>
+    <textarea value={videoReferenceNotes} onChange={(e) => setVideoReferenceNotes(e.target.value)} rows={2} placeholder="Descreva como são os vídeos de referência: ex. Drone vindo do mar, revela fachada, dados em tela, CTA no final" className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:ring-2 focus:ring-seazone-accent focus:border-transparent outline-none resize-none" />
+  </div>
+
+  {/* NARRADO section */}
+  {videoTypes.narrado && (
+    <div className="mt-4 p-4 rounded-xl bg-blue-50/50 border border-blue-100">
+      <h3 className="text-sm font-semibold text-blue-800 mb-2 flex items-center gap-2">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+        Assets para Vídeo Narrado
+      </h3>
+      <p className="text-[11px] text-blue-600 mb-3">Suba fotos/renders/vídeos do empreendimento, drone, praia, cidade. Estas imagens serão animadas com transições.</p>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {narradoAssetPreviews.map((preview, i) => (
+          <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-blue-200">
+            {narradoAssets[i]?.type.startsWith("video") ? (
+              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                <svg className="w-6 h-6 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /></svg>
               </div>
+            ) : (
+              <img src={preview} alt="" className="w-full h-full object-cover" />
+            )}
+            <button onClick={() => { setNarradoAssets(a => a.filter((_, j) => j !== i)); setNarradoAssetPreviews(p => p.filter((_, j) => j !== i)); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[8px] flex items-center justify-center hover:bg-red-600">x</button>
+          </div>
+        ))}
+      </div>
+      <label className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-[11px] font-semibold rounded-lg hover:bg-blue-700 cursor-pointer transition">
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+        Adicionar fotos/vídeos
+        <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={(e) => {
+          if (!e.target.files?.length) return;
+          const files = Array.from(e.target.files);
+          setNarradoAssets(prev => [...prev, ...files]);
+          files.forEach(f => {
+            const reader = new FileReader();
+            reader.onload = () => setNarradoAssetPreviews(prev => [...prev, reader.result as string]);
+            reader.readAsDataURL(f);
+          });
+        }} />
+      </label>
+    </div>
+  )}
 
-              <FormTextArea
-                label="Referência de estilo"
-                value={videoReferenceNotes}
-                onChange={setVideoReferenceNotes}
-                rows={3}
-                placeholder={"Descreva o estilo dos vídeos de referência que você subiu:\nEx: Drone vindo do mar, revela a fachada, corta para dados em tela, encerra com CTA.\nOu: Apresentadora fala direto com a câmera, imagens do empreendimento intercaladas."}
-                hint="Descreva como são os vídeos de referência para a IA replicar o estilo"
-              />
-
-              <div className="mt-2 p-3 rounded-xl bg-violet-50/50 border border-violet-100">
-                <h3 className="text-sm font-semibold text-violet-800 mb-2">Apresentadora</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormInput
-                    label="Nome da apresentadora"
-                    value={presentadoraNome}
-                    onChange={setPresentadoraNome}
-                    placeholder="Ex: Mônica"
-                  />
-                  <FormInput
-                    label="Estilo da apresentadora"
-                    value={presentadoraEstilo}
-                    onChange={setPresentadoraEstilo}
-                    placeholder="Ex: Carismática, como amiga especialista em investimentos"
-                    hint="Tom e personalidade"
-                  />
-                </div>
+  {/* APRESENTADORA section */}
+  {videoTypes.apresentadora && (
+    <div className="mt-4 p-4 rounded-xl bg-purple-50/50 border border-purple-100">
+      <h3 className="text-sm font-semibold text-purple-800 mb-2 flex items-center gap-2">
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+        Configuração da Apresentadora
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <div>
+          <label className="block text-[11px] font-medium text-gray-700 mb-1">Nome</label>
+          <input type="text" value={presentadoraNome} onChange={(e) => setPresentadoraNome(e.target.value)} placeholder="Mônica" className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:ring-2 focus:ring-purple-300 focus:border-transparent outline-none" />
+        </div>
+        <div>
+          <label className="block text-[11px] font-medium text-gray-700 mb-1">Estilo</label>
+          <input type="text" value={presentadoraEstilo} onChange={(e) => setPresentadoraEstilo(e.target.value)} placeholder="Carismática, especialista em investimentos" className="w-full px-3 py-2 border border-gray-200 rounded-lg bg-white text-sm focus:ring-2 focus:ring-purple-300 focus:border-transparent outline-none" />
+        </div>
+      </div>
+      <p className="text-[11px] text-purple-600 mb-3">Suba clipes da apresentadora falando + imagens/vídeos do empreendimento para intercalar.</p>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {apresentadoraClipPreviews.map((preview, i) => (
+          <div key={i} className="relative w-16 h-16 rounded-lg overflow-hidden border border-purple-200">
+            {apresentadoraClips[i]?.type.startsWith("video") ? (
+              <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                <svg className="w-6 h-6 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /></svg>
               </div>
-            </div>
+            ) : (
+              <img src={preview} alt="" className="w-full h-full object-cover" />
+            )}
+            <button onClick={() => { setApresentadoraClips(a => a.filter((_, j) => j !== i)); setApresentadoraClipPreviews(p => p.filter((_, j) => j !== i)); }} className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[8px] flex items-center justify-center hover:bg-red-600">x</button>
+          </div>
+        ))}
+      </div>
+      <label className="inline-flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white text-[11px] font-semibold rounded-lg hover:bg-purple-700 cursor-pointer transition">
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+        Adicionar clipes/fotos
+        <input type="file" multiple accept="image/*,video/*" className="hidden" onChange={(e) => {
+          if (!e.target.files?.length) return;
+          const files = Array.from(e.target.files);
+          setApresentadoraClips(prev => [...prev, ...files]);
+          files.forEach(f => {
+            const reader = new FileReader();
+            reader.onload = () => setApresentadoraClipPreviews(prev => [...prev, reader.result as string]);
+            reader.readAsDataURL(f);
+          });
+        }} />
+      </label>
+    </div>
+  )}
+</div>
 
             {/* ── LOGO DO EMPREENDIMENTO ── */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">

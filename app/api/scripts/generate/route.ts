@@ -10,13 +10,13 @@ interface RequestBody {
   doseDonts: string;
   lovableData: any; // full data from Lovable import
   videoBriefing?: {
+    types: { narrado: boolean; apresentadora: boolean };
     duration: string;
     tom: string;
     referenceNotes: string;
-    presentadora: {
-      nome: string;
-      estilo: string;
-    };
+    presentadora?: { nome: string; estilo: string };
+    narradoAssetCount?: number;
+    apresentadoraClipCount?: number;
   };
 }
 
@@ -107,6 +107,8 @@ ${videoBriefing ? `
 ${videoBriefing.tom ? `**Tom:** ${videoBriefing.tom}` : ""}
 ${videoBriefing.referenceNotes ? `**Estilo de referência:** ${videoBriefing.referenceNotes}\nIMPORTANTE: Os vídeos gerados DEVEM seguir este mesmo estilo visual e narrativo. Replique a estrutura de cenas descrita.` : ""}
 ${videoBriefing.presentadora?.nome ? `**Apresentadora:** ${videoBriefing.presentadora.nome} — ${videoBriefing.presentadora.estilo || "carismática, especialista em investimentos"}` : ""}
+${videoBriefing.narradoAssetCount ? `\nPara vídeos narrados: ${videoBriefing.narradoAssetCount} assets de referência foram fornecidos (fachada, drone, praia, cidade). Use useReference: true nas cenas que correspondem a esses assets.` : ""}
+${videoBriefing.apresentadoraClipCount ? `\nPara vídeos apresentadora: ${videoBriefing.apresentadoraClipCount} clipes foram fornecidos. As cenas devem alternar entre apresentadora e imagens do empreendimento.` : ""}
 ` : ""}
 ## Distribuição dos 45 criativos:
 
@@ -116,7 +118,7 @@ ${videoBriefing.presentadora?.nome ? `**Apresentadora:** ${videoBriefing.present
 - Prompt de imagem descritivo para IA geradora (em inglês) — APENAS a cena visual
 - Alguns devem ter tom de urgência/escassez, outros educativo, outros aspiracional
 
-### 15 NARRADOS (vídeo com voz over) — IDs 16-30
+${(!videoBriefing || videoBriefing.types.narrado) ? `### 15 NARRADOS (vídeo com voz over) — IDs 16-30
 - Roteiro de ${videoBriefing?.duration || "15"} segundos com 3-5 cenas (scenes)
 - Cada cena tem: duração, visual (descrição da imagem/vídeo), texto em tela, narração
 - Hook de abertura nos primeiros 3 segundos
@@ -125,14 +127,14 @@ ${videoBriefing.presentadora?.nome ? `**Apresentadora:** ${videoBriefing.present
 - CTA visual + narrado na última cena
 - referenceType: "fachada" | "aerial" | "interior" | "lifestyle" | "" (quando não usa referência)
 - videoPrompt: prompt completo em inglês para IA gerar o vídeo inteiro
-- style: "cinematic" (drone + transições suaves), "dynamic" (cortes rápidos), "educational" (dados em tela), "testimonial" (tom pessoal)
+- style: "cinematic" (drone + transições suaves), "dynamic" (cortes rápidos), "educational" (dados em tela), "testimonial" (tom pessoal)` : `### NARRADOS — NÃO GERAR (tipo não selecionado). IDs 16-30 devem ser estáticos extras.`}
 
-### 15 APRESENTADORA (vídeo com ${videoBriefing?.presentadora?.nome || "apresentadora"}) — IDs 31-45
+${(!videoBriefing || videoBriefing.types.apresentadora) ? `### 15 APRESENTADORA (vídeo com ${videoBriefing?.presentadora?.nome || "apresentadora"}) — IDs 31-45
 - Mesma estrutura de scenes, mas a apresentadora (${videoBriefing?.presentadora?.nome || "apresentadora"}) aparece em cenas alternadas
 - Cenas da ${videoBriefing?.presentadora?.nome || "apresentadora"}: visual descreve cenário limpo/clean ou com imagem de fundo do empreendimento
 - Cenas de apoio: imagens do empreendimento, dados em tela
 - Estilo: ${videoBriefing?.presentadora?.estilo || "conversacional e carismático"}
-- A ${videoBriefing?.presentadora?.nome || "apresentadora"} fala direto com a câmera
+- A ${videoBriefing?.presentadora?.nome || "apresentadora"} fala direto com a câmera` : `### APRESENTADORA — NÃO GERAR (tipo não selecionado). IDs 31-45 devem ser estáticos extras.`}
 
 ## FORMATO DE RESPOSTA (OBRIGATÓRIO):
 Responda EXATAMENTE neste formato JSON (sem markdown, sem \`\`\`):
