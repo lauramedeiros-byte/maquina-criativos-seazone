@@ -98,13 +98,27 @@ function FormTextArea({ label, value, onChange, placeholder, hint, rows = 4 }: {
 
 // ─── Helpers ──────────────────────────────────────────────────────
 async function imageUrlToBase64(url: string): Promise<string> {
-  const res = await fetch(url);
-  const blob = await res.blob();
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.readAsDataURL(blob);
-  });
+  // Load image, resize to max 800px, compress as JPEG to stay under Vercel 4.5MB body limit
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = url;
+  await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+
+  const maxSize = 800;
+  let w = img.width;
+  let h = img.height;
+  if (w > maxSize || h > maxSize) {
+    const scale = maxSize / Math.max(w, h);
+    w = Math.round(w * scale);
+    h = Math.round(h * scale);
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL("image/jpeg", 0.85);
 }
 
 // ─── Main ─────────────────────────────────────────────────────────
