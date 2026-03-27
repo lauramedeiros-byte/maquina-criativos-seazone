@@ -19,40 +19,53 @@ export async function POST(request: Request) {
 
   try {
     // Fetch page content (HTML + JS bundle)
-    const pageContent = await fetchLovableContent(url);
-
-    if (!pageContent || pageContent.length < 100) {
+    let pageContent: string;
+    try {
+      pageContent = await fetchLovableContent(url);
+    } catch (fetchErr) {
       return NextResponse.json(
-        { error: "Não consegui ler o conteúdo da página. Verifique o link." },
+        { error: `Não consegui acessar o link: ${fetchErr instanceof Error ? fetchErr.message : "verifique a URL"}` },
         { status: 400 }
       );
     }
 
-    // Use Gemini to extract structured data in simplified format
+    if (!pageContent || pageContent.length < 50) {
+      return NextResponse.json(
+        { error: `Não consegui ler conteúdo da página (${pageContent?.length || 0} caracteres). Verifique se o link está correto e acessível.` },
+        { status: 400 }
+      );
+    }
+
+    // Use Gemini to extract structured data
     const prompt = `Analise o conteúdo desta página de briefing de empreendimento imobiliário e extraia os dados principais.
 
-CONTEÚDO DA PÁGINA:
+CONTEÚDO DA PÁGINA (${pageContent.length} caracteres):
 ${pageContent.slice(0, 25000)}
 
 Extraia no formato JSON abaixo. Se algum campo não existir, deixe "".
-Responda APENAS o JSON, sem markdown:
+Responda APENAS o JSON, sem markdown, sem explicações:
 
 {
-  "nomeSpot": "nome completo do empreendimento/SPOT exatamente como aparece no briefing",
-  "localizacao": "bairro e cidade (ex: Campeche, Florianópolis)",
-  "pontosFortes": ["ponto forte 1 com dado real", "ponto forte 2 com dado real", "ponto forte 3 com dado real"],
-  "doseDonts": "Resuma em 2 blocos: DO: o que os criativos devem fazer/dizer. DON'T: o que evitar.",
-  "resumo": "Resumo completo de tudo que foi extraído da página: descrição do empreendimento, diferenciais, dados financeiros (ROI, valor de aluguel, etc.), localização detalhada, público-alvo, estilo visual, diretrizes de criativo e qualquer outra informação relevante."
-}
+  "nomeSpot": "nome completo do empreendimento/SPOT",
+  "localizacao": "bairro e cidade",
+  "pontosFortes": ["ponto forte 1 com dado real", "ponto forte 2"],
+  "doseDonts": "DO: ... DON'T: ...",
+  "resumo": "Resumo completo: descrição, diferenciais, dados financeiros, localização, público-alvo, estilo visual."
+}`;
 
-IMPORTANTE para pontosFortes: inclua dados concretos como ROI, valor de aluguel mensal, distância da praia, número de unidades, etc.
-IMPORTANTE para resumo: seja completo e detalhado — este campo será usado para gerar 45 roteiros de marketing.`;
-
-    const result = await geminiText(prompt);
+    let result: string | null;
+    try {
+      result = await geminiText(prompt);
+    } catch (geminiErr) {
+      return NextResponse.json(
+        { error: `Erro ao processar com Gemini: ${geminiErr instanceof Error ? geminiErr.message : "tente novamente"}` },
+        { status: 500 }
+      );
+    }
 
     if (!result) {
       return NextResponse.json(
-        { error: "Erro ao processar com IA. Tente novamente." },
+        { error: "Gemini não retornou resposta. Verifique se a GOOGLE_GENAI_API_KEY está correta." },
         { status: 500 }
       );
     }
@@ -62,13 +75,21 @@ IMPORTANTE para resumo: seja completo e detalhado — este campo será usado par
     const match = jsonStr.match(/\{[\s\S]*\}/);
     if (match) jsonStr = match[0];
 
-    const data = JSON.parse(jsonStr);
+    let data;
+    try {
+      data = JSON.parse(jsonStr);
+    } catch {
+      return NextResponse.json(
+        { error: `Gemini retornou formato inválido. Tente novamente. (Resposta: ${result.slice(0, 200)}...)` },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("Erro import:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Erro ao importar" },
+      { error: `Erro inesperado: ${error instanceof Error ? error.message : "tente novamente"}` },
       { status: 500 }
     );
   }
