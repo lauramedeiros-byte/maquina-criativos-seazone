@@ -50,21 +50,37 @@ export class FalImageService {
     ensureConfig();
 
     try {
-      // Always use FLUX Schnell (free tier, works on all accounts)
-      // If reference image exists, describe it in the prompt for better results
-      const enhancedPrompt = referenceImageUrl
-        ? `${prompt}. IMPORTANT: Base the image on the reference building/property shown at this URL. Maintain the same architectural style, colors, and facade.`
-        : prompt;
+      let imageUrl: string | undefined;
 
-      const result = await fal.subscribe("fal-ai/flux/schnell", {
-        input: {
-          prompt: enhancedPrompt,
-          image_size: "square_hd",
-          num_images: 1,
-        },
-      });
+      if (referenceImageUrl) {
+        // Use image-to-image with the reference asset (facade, aerial, etc.)
+        try {
+          const result = await fal.subscribe("fal-ai/flux/dev/image-to-image" as any, {
+            input: {
+              prompt,
+              image_url: referenceImageUrl,
+              strength: 0.35,
+              num_images: 1,
+            },
+          });
+          const data = result.data as any;
+          imageUrl = data?.images?.[0]?.url;
+        } catch {
+          // If image-to-image fails, fall back to text-to-image
+        }
+      }
 
-      const imageUrl = result.data?.images?.[0]?.url;
+      // Fallback or no reference: use text-to-image
+      if (!imageUrl) {
+        const result = await fal.subscribe("fal-ai/flux/schnell", {
+          input: {
+            prompt,
+            image_size: "square_hd",
+            num_images: 1,
+          },
+        });
+        imageUrl = result.data?.images?.[0]?.url;
+      }
 
       if (!imageUrl) {
         return { success: false, fileName, error: "Fal AI não retornou imagem" };

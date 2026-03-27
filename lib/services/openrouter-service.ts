@@ -85,30 +85,32 @@ export class PremiumImageService {
 
     const data = await res.json();
 
-    // GPT-5 Image returns the image in the message content
-    // It can be: text with a URL, or a content array with image parts
+    // GPT-5 Image response format:
+    // message.images[0].image_url.url = "data:image/png;base64,..."
+    // OR message.content = array of parts
     const choice = data?.choices?.[0]?.message;
     if (!choice) return null;
 
-    // Check for content array (multimodal response)
+    // PRIMARY: GPT-5 returns images in message.images array
+    if (Array.isArray(choice.images) && choice.images.length > 0) {
+      const img = choice.images[0];
+      if (img.image_url?.url) return img.image_url.url;
+      if (img.url) return img.url;
+    }
+
+    // FALLBACK: Check content array (multimodal response)
     if (Array.isArray(choice.content)) {
       for (const part of choice.content) {
-        // Image URL part
         if (part.type === "image_url" && part.image_url?.url) {
           return part.image_url.url;
         }
-        // Base64 image part
         if (part.type === "image" && part.image?.url) {
           return part.image.url;
-        }
-        // OpenRouter format: inline_data
-        if (part.type === "image_url" && part.image_url?.url?.startsWith("data:")) {
-          return part.image_url.url;
         }
       }
     }
 
-    // Check for text response that contains a URL
+    // FALLBACK: Check for text response that contains a URL
     if (typeof choice.content === "string") {
       const urlMatch = choice.content.match(/https?:\/\/[^\s"'<>]+\.(png|jpg|jpeg|webp)/i);
       if (urlMatch) return urlMatch[0];
