@@ -144,6 +144,7 @@ export default function Home() {
     overlayText?: { hook: string; script: string; nomeSpot: string; cta?: string };
     score?: number;
   }>>({});
+  const [editingOverlay, setEditingOverlay] = useState<number | null>(null);
   const [driveFolderId, setDriveFolderId] = useState("");
   const [uploadingDrive, setUploadingDrive] = useState(false);
   const [driveUploaded, setDriveUploaded] = useState(false);
@@ -312,7 +313,7 @@ export default function Home() {
   }
 
   // ── Production
-  async function handleProduce(script: GeneratedScript, platform: "fal-image" | "fal-video" | "openrouter-image" | "freepik-image") {
+  async function handleProduce(script: GeneratedScript, platform: "fal-image" | "fal-video" | "openrouter-image" | "freepik-image" | "freepik-video") {
     setProductionStatus((p) => ({ ...p, [script.id]: { status: "producing", platform } }));
     try {
       const res = await fetch("/api/produce", {
@@ -1133,6 +1134,7 @@ export default function Home() {
                 >
                   Gerar vídeos
                 </button>
+                <button onClick={() => handleProduceAll("video", "freepik-video")} disabled={producingCount > 0} className="px-4 py-2 bg-orange-500 text-white text-xs font-semibold rounded-lg hover:bg-orange-600 disabled:opacity-40">Vídeos (Freepik)</button>
               </div>
             </div>
 
@@ -1210,7 +1212,10 @@ export default function Home() {
                                 </div>
                               )}
                               {ps.status === "idle" && script.type !== "static" && (
-                                <button onClick={() => handleProduce(script, "fal-video")} className="px-3 py-1.5 bg-purple-500 text-white text-[11px] font-semibold rounded-lg hover:bg-purple-600 whitespace-nowrap">Gerar Vídeo</button>
+                                <div className="flex gap-1">
+                                  <button onClick={() => handleProduce(script, "fal-video")} className="px-2.5 py-1.5 bg-violet-500 text-white text-[9px] font-semibold rounded-lg hover:bg-violet-600 whitespace-nowrap">Kling (Fal)</button>
+                                  <button onClick={() => handleProduce(script, "freepik-video")} className="px-2.5 py-1.5 bg-orange-500 text-white text-[9px] font-semibold rounded-lg hover:bg-orange-600 whitespace-nowrap">Freepik</button>
+                                </div>
                               )}
 
                               {ps.status === "producing" && (
@@ -1240,6 +1245,14 @@ export default function Home() {
                                   {ps.resultUrl && !ps.overlayText && (
                                     <a href={ps.resultUrl} download={ps.fileName || `criativo_${script.id}.png`} className="px-2 py-1 rounded-md text-[10px] font-semibold bg-seazone-primary text-white hover:bg-seazone-secondary transition">Download</a>
                                   )}
+                                  {ps.overlayText && (
+                                    <button
+                                      onClick={() => setEditingOverlay(editingOverlay === script.id ? null : script.id)}
+                                      className="px-2 py-1 rounded-md text-[10px] font-semibold bg-gray-100 text-gray-600 hover:bg-gray-200 transition"
+                                    >
+                                      {editingOverlay === script.id ? "Fechar editor" : "Editar texto"}
+                                    </button>
+                                  )}
                                 </div>
                               )}
 
@@ -1260,7 +1273,48 @@ export default function Home() {
                               ) : (
                                 <div id={`creative-${script.id}`} className="relative w-full" style={{ maxWidth: 540, margin: "0 auto" }}>
                                   <img src={ps.resultUrl} alt={script.title} className="w-full block" crossOrigin="anonymous" />
-                                  {ps.overlayText && (
+                                  {ps.overlayText && editingOverlay === script.id ? (
+                                    <>
+                                      {/* Gradient */}
+                                      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 65%, rgba(0,0,0,0.85) 100%)" }} />
+                                      {/* Editable fields */}
+                                      <div className="absolute left-2 right-2 bottom-0" style={{ paddingBottom: "40px" }}>
+                                        <input
+                                          value={ps.overlayText.hook}
+                                          onChange={(e) => setProductionStatus(prev => ({
+                                            ...prev,
+                                            [script.id]: { ...prev[script.id], overlayText: { ...prev[script.id].overlayText!, hook: e.target.value } }
+                                          }))}
+                                          className="w-full bg-transparent text-white font-bold border-b border-white/30 focus:border-white outline-none mb-1 px-1"
+                                          style={{ fontSize: "clamp(14px, 3.5vw, 24px)" }}
+                                          placeholder="Hook text..."
+                                        />
+                                        <input
+                                          value={ps.overlayText.script}
+                                          onChange={(e) => setProductionStatus(prev => ({
+                                            ...prev,
+                                            [script.id]: { ...prev[script.id], overlayText: { ...prev[script.id].overlayText!, script: e.target.value } }
+                                          }))}
+                                          className="w-full bg-transparent text-white/85 border-b border-white/20 focus:border-white outline-none mb-1 px-1"
+                                          style={{ fontSize: "clamp(8px, 1.8vw, 13px)" }}
+                                          placeholder="Body text..."
+                                        />
+                                        <input
+                                          value={ps.overlayText.cta || ""}
+                                          onChange={(e) => setProductionStatus(prev => ({
+                                            ...prev,
+                                            [script.id]: { ...prev[script.id], overlayText: { ...prev[script.id].overlayText!, cta: e.target.value } }
+                                          }))}
+                                          className="w-full bg-transparent text-white border-b border-white/20 focus:border-white outline-none px-1"
+                                          style={{ fontSize: "clamp(8px, 1.6vw, 12px)" }}
+                                          placeholder="CTA text..."
+                                        />
+                                      </div>
+                                      <div className="absolute bottom-0 left-0 right-0 py-1 text-center" style={{ backgroundColor: "#011337" }}>
+                                        <span className="text-white text-[8px] font-bold tracking-[2px]">{ps.overlayText.nomeSpot.toUpperCase()}</span>
+                                      </div>
+                                    </>
+                                  ) : ps.overlayText && (
                                     <>
                                       {/* Gradient */}
                                       <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 65%, rgba(0,0,0,0.85) 100%)" }} />

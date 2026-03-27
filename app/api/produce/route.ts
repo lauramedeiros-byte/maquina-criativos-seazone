@@ -7,7 +7,7 @@ import {
   uploadToFalStorage,
 } from "@/lib/services/fal-service";
 import { PremiumImageService } from "@/lib/services/openrouter-service";
-import { FreepikImageService } from "@/lib/services/freepik-service";
+import { FreepikImageService, FreepikVideoService } from "@/lib/services/freepik-service";
 import { geminiText } from "@/lib/services/gemini-service";
 import { SEAZONE_BRANDBOOK } from "@/lib/brandbook";
 
@@ -22,7 +22,7 @@ function isImagePath(assetPath: string): boolean {
 interface RequestBody {
   scriptId: number;
   type: "static" | "narrated" | "avatar";
-  platform: "fal-image" | "fal-video" | "openrouter-image" | "freepik-image";
+  platform: "fal-image" | "fal-video" | "openrouter-image" | "freepik-image" | "freepik-video";
   script: string;
   copyText?: string;
   imagePrompt: string;
@@ -283,6 +283,32 @@ export async function POST(request: Request) {
             nomeSpot: body.nomeSpot || title,
             cta: "Fale com a nossa equipe",
           },
+        });
+      }
+
+      case "freepik-video": {
+        const service = new FreepikVideoService();
+        let videoPrompt: string;
+        if (body.scenes && body.scenes.length > 0) {
+          const sceneDescriptions = body.scenes
+            .map((s: any, i: number) => `Scene ${i + 1} (${s.duration}): ${s.visual}`)
+            .join(". ");
+          videoPrompt = `Professional real estate marketing video for "${title}". ${sceneDescriptions}. ${basePrompt}`;
+        } else {
+          videoPrompt = `Professional real estate marketing video for "${title}". ${script}. ${basePrompt}`;
+        }
+        const result = await service.generate(videoPrompt, referenceImageUrl);
+
+        const hookText = body.hook || title;
+        const { score, scoreReason } = await scoreCreative(script, hookText, title, pontosObrigatorios || "");
+
+        return NextResponse.json({
+          scriptId, platform,
+          success: result.success,
+          fileName: result.fileName,
+          videoUrl: result.videoUrl,
+          error: result.error,
+          score, scoreReason,
         });
       }
 

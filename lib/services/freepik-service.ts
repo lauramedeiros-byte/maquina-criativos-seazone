@@ -59,6 +59,65 @@ export class FreepikImageService {
   }
 }
 
+export class FreepikVideoService {
+  private apiKey: string;
+
+  constructor() {
+    this.apiKey = process.env.FREEPIK_API_KEY || "";
+  }
+
+  async generate(prompt: string, referenceImageUrl?: string): Promise<{
+    success: boolean;
+    videoUrl?: string;
+    fileName: string;
+    error?: string;
+  }> {
+    const fileName = `video_freepik_${Date.now()}.mp4`;
+
+    if (!this.apiKey) {
+      return { success: false, fileName, error: "FREEPIK_API_KEY não configurada" };
+    }
+
+    try {
+      // Freepik AI Video Generation
+      const body: any = {
+        prompt,
+        resolution: "720p",
+      };
+
+      // If reference image, use image-to-video
+      if (referenceImageUrl) {
+        body.image = { url: referenceImageUrl };
+      }
+
+      const res = await fetch("https://api.freepik.com/v1/ai/text-to-video", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-freepik-api-key": this.apiKey,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        return { success: false, fileName, error: `Freepik video error: ${res.status} - ${errorText.slice(0, 200)}` };
+      }
+
+      const data = await res.json();
+      const videoData = data?.data?.[0];
+
+      if (videoData?.url) {
+        return { success: true, videoUrl: videoData.url, fileName };
+      }
+
+      return { success: false, fileName, error: "Freepik não retornou vídeo" };
+    } catch (error) {
+      return { success: false, fileName, error: error instanceof Error ? error.message : "Erro Freepik vídeo" };
+    }
+  }
+}
+
 export class FreepikService {
   private apiKey: string;
 
