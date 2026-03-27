@@ -325,7 +325,9 @@ export default function Home() {
           hook: script.layers?.text.hook || script.hook,
           copyText: script.layers ? `${script.layers.text.hook}\n${script.layers.text.body}` : script.copyText,
           nomeSpot,
-          referenceAssets: (script.layers?.background?.useReference !== false && script.layers?.scenes?.[0]?.useReference !== false) ? selectedAssets : [],
+          referenceAssets: (script.layers?.background?.useReference !== false && script.layers?.scenes?.[0]?.useReference !== false)
+            ? selectedAssets.map(p => `${window.location.origin}${p}`)
+            : [],
           pontosObrigatorios,
           logoEmpreendimento,
           scenes: script.layers?.scenes,

@@ -53,6 +53,7 @@ export class FalImageService {
       let imageUrl: string | undefined;
 
       if (referenceImageUrl) {
+        console.log("[FalImageService] Using reference image:", referenceImageUrl.substring(0, 80));
         // Use image-to-image with the reference asset (facade, aerial, etc.)
         try {
           const result = await fal.subscribe("fal-ai/flux/dev/image-to-image" as any, {

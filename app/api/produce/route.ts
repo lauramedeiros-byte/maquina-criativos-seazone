@@ -49,9 +49,16 @@ interface ScoreResult {
 }
 
 /**
- * Resolves the first image asset from the referenceAssets list,
- * uploads it to Fal storage, and returns its hosted URL.
- * Returns undefined (without throwing) if no usable asset is found.
+ * Resolves the first image asset from the referenceAssets list and returns a URL
+ * that Fal AI can fetch directly.
+ *
+ * On Vercel the filesystem is read-only and `public/` uploads don't persist,
+ * so we now expect the frontend to send full absolute URLs
+ * (e.g. https://maquina-criativos-seazone.vercel.app/assets/fachada/render.png).
+ * Fal AI can fetch any public https:// URL directly — no upload step needed.
+ *
+ * Falls back to disk-upload for local development where relative paths may still
+ * be passed.
  */
 async function resolveReferenceImageUrl(
   referenceAssets: string[]
@@ -59,13 +66,16 @@ async function resolveReferenceImageUrl(
   const firstImage = referenceAssets.find(isImagePath);
   if (!firstImage) return undefined;
 
-  // Paths are relative URLs like /assets/fachada/render1.png
-  // Strip the leading "/" and prepend the public directory
+  // If it's already a full URL (http/https), pass it straight to Fal AI
+  if (firstImage.startsWith("http")) {
+    return firstImage;
+  }
+
+  // Fallback for local dev: relative path → read from disk → upload to Fal storage
   const relativePath = firstImage.startsWith("/") ? firstImage.slice(1) : firstImage;
   const absolutePath = path.join(process.cwd(), "public", relativePath);
 
   try {
-    // Verify the file exists before attempting upload
     readFileSync(absolutePath); // throws if missing
     const url = await uploadToFalStorage(absolutePath);
     return url;
