@@ -20,7 +20,7 @@ export class PremiumImageService {
     const openRouterKey = process.env.OPENROUTER_API_KEY;
     if (openRouterKey) {
       try {
-        const result = await this.generateWithGPT5(prompt, openRouterKey);
+        const result = await this.generateWithGPT5(prompt, openRouterKey, referenceImageUrl);
         if (result) return { success: true, imageUrl: result, fileName };
       } catch (error) {
         // If it's a clear error (no credits, etc), return it directly
@@ -55,7 +55,26 @@ export class PremiumImageService {
    * Generate image using GPT-5 Image model via OpenRouter chat completions.
    * The model returns an image as a base64 content part in the response.
    */
-  private async generateWithGPT5(prompt: string, apiKey: string): Promise<string | null> {
+  private async generateWithGPT5(prompt: string, apiKey: string, referenceImageUrl?: string): Promise<string | null> {
+    // Build messages with optional reference image
+    const userContent: any[] = [];
+
+    if (referenceImageUrl) {
+      userContent.push({
+        type: "image_url",
+        image_url: { url: referenceImageUrl }
+      });
+      userContent.push({
+        type: "text",
+        text: `Use this building/property as the MAIN visual reference. Keep the exact same facade, architecture, and colors. Generate a professional real estate marketing image based on this building. Additional instructions: ${prompt}`
+      });
+    } else {
+      userContent.push({
+        type: "text",
+        text: prompt
+      });
+    }
+
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -66,12 +85,7 @@ export class PremiumImageService {
       },
       body: JSON.stringify({
         model: "openai/gpt-5-image",
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
+        messages: [{ role: "user", content: userContent }],
       }),
     });
 

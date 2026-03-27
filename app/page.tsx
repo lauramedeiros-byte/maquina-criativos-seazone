@@ -432,22 +432,22 @@ export default function Home() {
     // Gradient overlay
     const grad = ctx.createLinearGradient(0, 0, 0, size);
     grad.addColorStop(0, "rgba(0,0,0,0)");
-    grad.addColorStop(0.35, "rgba(0,0,0,0)");
-    grad.addColorStop(0.65, "rgba(0,0,0,0.55)");
-    grad.addColorStop(1, "rgba(0,0,0,0.88)");
+    grad.addColorStop(0.40, "rgba(0,0,0,0)");
+    grad.addColorStop(0.65, "rgba(0,0,0,0.5)");
+    grad.addColorStop(1, "rgba(0,0,0,0.85)");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, size, size);
 
     // Top accent line
-    ctx.fillStyle = "#3B9AE1";
+    ctx.fillStyle = "#F1605D";
     ctx.fillRect(40, 40, 80, 4);
 
     // SEAZONE badge
-    ctx.fillStyle = "rgba(31,78,120,0.85)";
+    ctx.fillStyle = "rgba(1,19,55,0.85)";
     ctx.beginPath();
     ctx.roundRect(870, 28, 170, 38, 8);
     ctx.fill();
-    ctx.font = "bold 15px Arial";
+    ctx.font = "bold 13px Arial";
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
     ctx.letterSpacing = "3px";
@@ -470,22 +470,22 @@ export default function Home() {
 
     // Hook text
     ctx.textAlign = "left";
-    ctx.font = "bold 44px Arial";
+    ctx.font = "bold 36px Arial";
     ctx.fillStyle = "white";
-    ctx.shadowColor = "rgba(0,0,0,0.6)";
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 2;
+    ctx.shadowColor = "rgba(0,0,0,0.7)";
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetY = 1;
     const hookLines = wrapCanvasText(ctx, ps.overlayText.hook, 1000);
-    let y = 640;
-    for (const line of hookLines) { ctx.fillText(line, 50, y); y += 54; }
+    let y = 660;
+    for (const line of hookLines) { ctx.fillText(line, 50, y); y += 44; }
 
     // Script text
-    ctx.font = "400 22px Arial";
-    ctx.globalAlpha = 0.9;
-    ctx.shadowBlur = 4;
+    ctx.font = "400 18px Arial";
+    ctx.globalAlpha = 0.85;
+    ctx.shadowBlur = 3;
     const scriptLines = wrapCanvasText(ctx, ps.overlayText.script, 1000);
-    y += 10;
-    for (const line of scriptLines) { ctx.fillText(line, 50, y); y += 32; }
+    y += 8;
+    for (const line of scriptLines) { ctx.fillText(line, 50, y); y += 26; }
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
@@ -493,25 +493,25 @@ export default function Home() {
     // CTA button
     if (ps.overlayText?.cta) {
       const ctaText = ps.overlayText.cta;
-      ctx.font = "bold 20px Arial";
+      ctx.font = "bold 16px Arial";
       const ctaWidth = ctx.measureText(ctaText).width + 40;
-      ctx.fillStyle = "#3B9AE1";
+      ctx.fillStyle = "#F1605D";
       ctx.beginPath();
-      ctx.roundRect(50, y + 15, ctaWidth, 40, 8);
+      ctx.roundRect(50, y + 12, ctaWidth, 36, 8);
       ctx.fill();
       ctx.fillStyle = "white";
       ctx.textAlign = "left";
-      ctx.fillText(ctaText, 70, y + 42);
+      ctx.fillText(ctaText, 70, y + 36);
     }
 
     // Bottom bar
-    ctx.fillStyle = "#1F4E78";
+    ctx.fillStyle = "#011337";
     ctx.fillRect(0, 1040, size, 40);
     ctx.fillStyle = "white";
-    ctx.font = "bold 16px Arial";
+    ctx.font = "bold 14px Arial";
     ctx.textAlign = "center";
     ctx.letterSpacing = "2px";
-    ctx.fillText(ps.overlayText.nomeSpot.toUpperCase(), 540, 1067);
+    ctx.fillText(ps.overlayText.nomeSpot.toUpperCase(), 540, 1065);
 
     // Download
     const link = document.createElement("a");
@@ -1262,45 +1262,43 @@ export default function Home() {
                                   <img src={ps.resultUrl} alt={script.title} className="w-full block" crossOrigin="anonymous" />
                                   {ps.overlayText && (
                                     <>
-                                      {/* LAYER 1: Gradient for text readability */}
-                                      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.88) 100%)" }} />
+                                      {/* Gradient */}
+                                      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 65%, rgba(0,0,0,0.85) 100%)" }} />
 
-                                      {/* LAYER 3: Logos */}
-                                      {/* Seazone badge - always top right */}
-                                      <div className="absolute top-3 right-3 px-3 py-1 rounded-md text-[10px] font-bold tracking-widest text-white" style={{ backgroundColor: "rgba(31,78,120,0.85)" }}>SEAZONE</div>
-                                      {/* Empreendimento logo - top left */}
+                                      {/* SEAZONE badge */}
+                                      <div className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-md text-[8px] font-bold tracking-[3px] text-white" style={{ backgroundColor: "rgba(1,19,55,0.85)" }}>SEAZONE</div>
+
+                                      {/* Property logo */}
                                       {logoEmpreendimento && (
-                                        <div className="absolute top-3 left-3">
-                                          <img src={logoEmpreendimento} alt="Logo" className="h-8 w-auto object-contain drop-shadow-lg" />
+                                        <div className="absolute top-2.5 left-3">
+                                          <img src={logoEmpreendimento} alt="Logo" className="h-7 w-auto object-contain drop-shadow-lg" />
                                         </div>
                                       )}
-                                      {/* Top accent */}
-                                      <div className="absolute top-14 left-4 w-12 h-1 rounded" style={{ backgroundColor: "#3B9AE1" }} />
 
-                                      {/* LAYER 2: Marketing Text */}
-                                      {/* Hook */}
-                                      <div className="absolute left-4 right-4" style={{ bottom: "28%" }}>
-                                        <p className="text-white font-extrabold leading-tight drop-shadow-lg" style={{ fontSize: "clamp(18px, 4vw, 32px)", textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>
+                                      {/* Accent line */}
+                                      <div className="absolute left-3" style={{ top: logoEmpreendimento ? "42px" : "12px", width: 40, height: 3, backgroundColor: "#F1605D", borderRadius: 2 }} />
+
+                                      {/* Text block — compact, bottom-aligned */}
+                                      <div className="absolute left-3 right-3 bottom-0" style={{ paddingBottom: "44px" }}>
+                                        {/* Hook */}
+                                        <p className="text-white font-bold leading-tight mb-1" style={{ fontSize: "clamp(14px, 3.5vw, 24px)", textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}>
                                           {ps.overlayText.hook}
                                         </p>
-                                      </div>
-                                      {/* Body */}
-                                      <div className="absolute left-4 right-4" style={{ bottom: "18%" }}>
-                                        <p className="text-white/90 leading-snug drop-shadow" style={{ fontSize: "clamp(10px, 2vw, 16px)", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
+                                        {/* Body */}
+                                        <p className="text-white/85 leading-snug mb-2" style={{ fontSize: "clamp(8px, 1.8vw, 13px)", textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
                                           {ps.overlayText.script}
                                         </p>
-                                      </div>
-                                      {/* CTA button */}
-                                      {ps.overlayText.cta && (
-                                        <div className="absolute left-4 right-4" style={{ bottom: "8%" }}>
-                                          <div className="inline-block px-5 py-2 rounded-lg text-white font-bold" style={{ backgroundColor: "#3B9AE1", fontSize: "clamp(10px, 1.8vw, 14px)" }}>
+                                        {/* CTA */}
+                                        {ps.overlayText.cta && (
+                                          <div className="inline-block px-3 py-1.5 rounded-md text-white font-bold" style={{ backgroundColor: "#F1605D", fontSize: "clamp(8px, 1.6vw, 12px)" }}>
                                             {ps.overlayText.cta}
                                           </div>
-                                        </div>
-                                      )}
-                                      {/* Bottom bar with SPOT name */}
-                                      <div className="absolute bottom-0 left-0 right-0 py-1.5 text-center" style={{ backgroundColor: "#1F4E78" }}>
-                                        <span className="text-white text-[10px] font-bold tracking-widest">{ps.overlayText.nomeSpot.toUpperCase()}</span>
+                                        )}
+                                      </div>
+
+                                      {/* Bottom bar */}
+                                      <div className="absolute bottom-0 left-0 right-0 py-1 text-center" style={{ backgroundColor: "#011337" }}>
+                                        <span className="text-white text-[8px] font-bold tracking-[2px]">{ps.overlayText.nomeSpot.toUpperCase()}</span>
                                       </div>
                                     </>
                                   )}
