@@ -76,7 +76,7 @@ export class FalImageService {
         const result = await fal.subscribe("fal-ai/flux/schnell", {
           input: {
             prompt,
-            image_size: "square_hd",
+            image_size: { width: 1080, height: 1350 },
             num_images: 1,
           },
         });

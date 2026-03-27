@@ -424,26 +424,40 @@ export default function Home() {
     img.src = ps.resultUrl;
     await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
 
-    const size = 1080;
+    const W = 1080;
+    const H = 1350; // 4:5 portrait format (Instagram Feed)
     const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = W;
+    canvas.height = H;
     const ctx = canvas.getContext("2d")!;
 
-    // Draw image (cover)
-    const scale = Math.max(size / img.width, size / img.height);
-    const w = img.width * scale;
-    const h = img.height * scale;
-    ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+    // Draw image (cover — fill canvas, crop excess, no deformation)
+    const imgRatio = img.width / img.height;
+    const canvasRatio = W / H;
+    let sw, sh, sx, sy;
+    if (imgRatio > canvasRatio) {
+      // Image is wider — crop sides
+      sh = img.height;
+      sw = img.height * canvasRatio;
+      sx = (img.width - sw) / 2;
+      sy = 0;
+    } else {
+      // Image is taller — crop top/bottom
+      sw = img.width;
+      sh = img.width / canvasRatio;
+      sx = 0;
+      sy = (img.height - sh) / 2;
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
 
     // Gradient overlay
-    const grad = ctx.createLinearGradient(0, 0, 0, size);
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
     grad.addColorStop(0, "rgba(0,0,0,0)");
-    grad.addColorStop(0.40, "rgba(0,0,0,0)");
-    grad.addColorStop(0.65, "rgba(0,0,0,0.5)");
-    grad.addColorStop(1, "rgba(0,0,0,0.85)");
+    grad.addColorStop(0.45, "rgba(0,0,0,0)");
+    grad.addColorStop(0.70, "rgba(0,0,0,0.55)");
+    grad.addColorStop(1, "rgba(0,0,0,0.88)");
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, size, size);
+    ctx.fillRect(0, 0, W, H);
 
     // Top accent line
     ctx.fillStyle = "#F1605D";
@@ -457,7 +471,7 @@ export default function Home() {
       await new Promise((resolve, reject) => { seazoneLogo.onload = resolve; seazoneLogo.onerror = reject; });
       const logoH = 70;
       const logoW = (seazoneLogo.width / seazoneLogo.height) * logoH;
-      ctx.drawImage(seazoneLogo, size - logoW - 30, 25, logoW, logoH);
+      ctx.drawImage(seazoneLogo, W - logoW - 30, 25, logoW, logoH);
     } catch {
       // Fallback: text badge if logo fails to load
       ctx.fillStyle = "rgba(1,19,55,0.85)";
@@ -486,22 +500,22 @@ export default function Home() {
 
     // Hook text
     ctx.textAlign = "left";
-    ctx.font = "bold 36px Arial";
+    ctx.font = "bold 40px Arial";
     ctx.fillStyle = "white";
-    ctx.shadowColor = "rgba(0,0,0,0.7)";
-    ctx.shadowBlur = 6;
-    ctx.shadowOffsetY = 1;
-    const hookLines = wrapCanvasText(ctx, ps.overlayText.hook, 1000);
-    let y = 660;
-    for (const line of hookLines) { ctx.fillText(line, 50, y); y += 44; }
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 2;
+    const hookLines = wrapCanvasText(ctx, ps.overlayText.hook, W - 80);
+    let y = H * 0.68;
+    for (const line of hookLines) { ctx.fillText(line, 50, y); y += 50; }
 
     // Script text
-    ctx.font = "400 18px Arial";
-    ctx.globalAlpha = 0.85;
-    ctx.shadowBlur = 3;
-    const scriptLines = wrapCanvasText(ctx, ps.overlayText.script, 1000);
-    y += 8;
-    for (const line of scriptLines) { ctx.fillText(line, 50, y); y += 26; }
+    ctx.font = "400 20px Arial";
+    ctx.globalAlpha = 0.9;
+    ctx.shadowBlur = 4;
+    const scriptLines = wrapCanvasText(ctx, ps.overlayText.script, W - 80);
+    y += 10;
+    for (const line of scriptLines) { ctx.fillText(line, 50, y); y += 28; }
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
@@ -509,25 +523,26 @@ export default function Home() {
     // CTA button
     if (ps.overlayText?.cta) {
       const ctaText = ps.overlayText.cta;
-      ctx.font = "bold 16px Arial";
+      ctx.font = "bold 18px Arial";
       const ctaWidth = ctx.measureText(ctaText).width + 40;
+      y += 15;
       ctx.fillStyle = "#F1605D";
       ctx.beginPath();
-      ctx.roundRect(50, y + 12, ctaWidth, 36, 8);
+      ctx.roundRect(50, y, ctaWidth, 38, 8);
       ctx.fill();
       ctx.fillStyle = "white";
       ctx.textAlign = "left";
-      ctx.fillText(ctaText, 70, y + 36);
+      ctx.fillText(ctaText, 70, y + 26);
     }
 
     // Bottom bar
     ctx.fillStyle = "#011337";
-    ctx.fillRect(0, 1040, size, 40);
+    ctx.fillRect(0, H - 36, W, 36);
     ctx.fillStyle = "white";
     ctx.font = "bold 14px Arial";
     ctx.textAlign = "center";
     ctx.letterSpacing = "2px";
-    ctx.fillText(ps.overlayText.nomeSpot.toUpperCase(), 540, 1065);
+    ctx.fillText(ps.overlayText.nomeSpot.toUpperCase(), W / 2, H - 12);
 
     // Download
     const link = document.createElement("a");
@@ -1327,8 +1342,8 @@ export default function Home() {
                               {ps.resultUrl.match(/\.(mp4|webm)/) || ps.resultUrl.startsWith("data:video") ? (
                                 <video src={ps.resultUrl} controls className="w-full max-h-[500px]" />
                               ) : (
-                                <div id={`creative-${script.id}`} className="relative w-full" style={{ maxWidth: 540, margin: "0 auto" }}>
-                                  <img src={ps.resultUrl} alt={script.title} className="w-full block" crossOrigin="anonymous" />
+                                <div id={`creative-${script.id}`} className="relative w-full overflow-hidden" style={{ maxWidth: 450, margin: "0 auto", aspectRatio: "4/5" }}>
+                                  <img src={ps.resultUrl} alt={script.title} className="w-full h-full object-cover" crossOrigin="anonymous" />
                                   {ps.overlayText && editingOverlay === script.id ? (
                                     <>
                                       {/* Gradient */}
