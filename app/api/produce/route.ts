@@ -31,6 +31,14 @@ interface RequestBody {
   referenceAssets?: string[]; // e.g. ["/assets/fachada/render1.png"]
   pontosObrigatorios?: string;
   logoEmpreendimento?: string;
+  scenes?: Array<{
+    duration: string;
+    visual: string;
+    text_on_screen: string;
+    narration: string;
+    useReference: boolean;
+    referenceType: string;
+  }>;
 }
 
 interface ScoreResult {
@@ -181,7 +189,18 @@ export async function POST(request: Request) {
 
       case "fal-video": {
         const service = new FalVideoService();
-        const videoPrompt = `Create a cinematic professional marketing video for vacation rental investment property "${title}". Animate the building facade and surroundings. Script: "${script}". Visual: ${basePrompt}. Style: smooth camera movement, luxury real estate, aspirational.`;
+
+        // Build rich video prompt from scenes if available
+        let videoPrompt: string;
+        if (body.scenes && body.scenes.length > 0) {
+          const sceneDescriptions = body.scenes
+            .map((s, i) => `Scene ${i + 1} (${s.duration}): ${s.visual}${s.text_on_screen ? ` [Text overlay: "${s.text_on_screen}"]` : ""}`)
+            .join(". ");
+          videoPrompt = `Create a professional real estate marketing video for "${title}". ${sceneDescriptions}. Style: ${basePrompt}. Smooth camera transitions, luxury feel, aspirational.`;
+        } else {
+          videoPrompt = `Create a cinematic professional marketing video for vacation rental investment property "${title}". Animate the building facade and surroundings. Script: "${script}". Visual: ${basePrompt}. Style: smooth camera movement, luxury real estate, aspirational.`;
+        }
+
         const result = await service.generate(videoPrompt, referenceImageUrl);
 
         // Score the creative after video generation using script metadata

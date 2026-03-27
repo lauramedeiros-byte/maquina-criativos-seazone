@@ -3,12 +3,24 @@
 import { useState, useEffect } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────
+interface SceneLayer {
+  duration: string;
+  visual: string;
+  text_on_screen: string;
+  narration: string;
+  useReference: boolean;
+  referenceType: string;
+}
+
 interface GeneratedScript {
   id: number;
   type: "static" | "narrated" | "avatar";
   title: string;
   layers?: {
-    background: { imagePrompt: string; style: string; useReference: boolean };
+    background?: { imagePrompt: string; style: string; useReference: boolean };
+    scenes?: SceneLayer[];
+    videoPrompt?: string;
+    style?: string;
     text: { hook: string; body: string; cta: string };
     logos: { seazone: boolean; empreendimento: boolean };
   };
@@ -262,14 +274,15 @@ export default function Home() {
         body: JSON.stringify({
           scriptId: script.id, type: script.type, platform,
           script: script.script,
-          imagePrompt: script.layers?.background.imagePrompt || script.imagePrompt,
+          imagePrompt: script.layers?.background?.imagePrompt || script.layers?.videoPrompt || script.imagePrompt,
           title: script.title,
           hook: script.layers?.text.hook || script.hook,
           copyText: script.layers ? `${script.layers.text.hook}\n${script.layers.text.body}` : script.copyText,
           nomeSpot,
-          referenceAssets: (script.layers?.background.useReference !== false) ? selectedAssets : [],
+          referenceAssets: (script.layers?.background?.useReference !== false && script.layers?.scenes?.[0]?.useReference !== false) ? selectedAssets : [],
           pontosObrigatorios,
           logoEmpreendimento,
+          scenes: script.layers?.scenes,
         }),
       });
       const data = await res.json();
@@ -806,16 +819,36 @@ export default function Home() {
                             </p>
                           )}
                           {script.layers && !isEditing && (
-                            <div className="mt-2 flex gap-2 flex-wrap">
-                              <span className="px-2 py-0.5 rounded text-[9px] bg-blue-50 text-blue-700">
-                                BG: {script.layers.background.style} {script.layers.background.useReference ? "+ ref" : ""}
-                              </span>
-                              <span className="px-2 py-0.5 rounded text-[9px] bg-amber-50 text-amber-700">
-                                Hook: {script.layers.text.hook}
-                              </span>
-                              <span className="px-2 py-0.5 rounded text-[9px] bg-green-50 text-green-700">
-                                CTA: {script.layers.text.cta}
-                              </span>
+                            <div className="mt-2">
+                              <div className="flex gap-2 flex-wrap">
+                                {script.layers.background && (
+                                  <span className="px-2 py-0.5 rounded text-[9px] bg-blue-50 text-blue-700">
+                                    BG: {script.layers.background.style} {script.layers.background.useReference ? "+ ref" : ""}
+                                  </span>
+                                )}
+                                {script.layers.style && (
+                                  <span className="px-2 py-0.5 rounded text-[9px] bg-purple-50 text-purple-700">
+                                    Estilo: {script.layers.style}
+                                  </span>
+                                )}
+                                <span className="px-2 py-0.5 rounded text-[9px] bg-amber-50 text-amber-700">
+                                  Hook: {script.layers.text.hook}
+                                </span>
+                                <span className="px-2 py-0.5 rounded text-[9px] bg-green-50 text-green-700">
+                                  CTA: {script.layers.text.cta}
+                                </span>
+                              </div>
+                              {script.layers.scenes && (
+                                <div className="mt-2 space-y-1">
+                                  {script.layers.scenes.map((scene, i) => (
+                                    <div key={i} className="flex gap-2 text-[9px]">
+                                      <span className="px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-mono shrink-0">{scene.duration}</span>
+                                      <span className="text-gray-500 truncate">{scene.visual.slice(0, 60)}...</span>
+                                      {scene.useReference && <span className="px-1 py-0.5 rounded bg-purple-50 text-purple-600 shrink-0">ref: {scene.referenceType}</span>}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           )}
                           {isEditing ? (
