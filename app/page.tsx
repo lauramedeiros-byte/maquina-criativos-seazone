@@ -107,6 +107,12 @@ export default function Home() {
   const [lovableUrl, setLovableUrl] = useState("");
   const [pontosObrigatorios, setPontosObrigatorios] = useState("");
   const [doseDonts, setDoseDonts] = useState("");
+  // ── Video briefing state
+  const [videoDuration, setVideoDuration] = useState("15");
+  const [videoTom, setVideoTom] = useState("");
+  const [videoReferenceNotes, setVideoReferenceNotes] = useState("");
+  const [presentadoraNome, setPresentadoraNome] = useState("Mônica");
+  const [presentadoraEstilo, setPresentadoraEstilo] = useState("");
   const [logoEmpreendimento, setLogoEmpreendimento] = useState<string>("");
   const [lovableData, setLovableData] = useState<Record<string, unknown> | null>(null);
   const [lovableImported, setLovableImported] = useState(false);
@@ -245,6 +251,16 @@ export default function Home() {
           pontosObrigatorios,
           doseDonts,
           lovableData,
+          // Video briefing
+          videoBriefing: {
+            duration: videoDuration,
+            tom: videoTom,
+            referenceNotes: videoReferenceNotes,
+            presentadora: {
+              nome: presentadoraNome,
+              estilo: presentadoraEstilo,
+            },
+          },
         }),
       });
       const data = await res.json();
@@ -645,6 +661,67 @@ export default function Home() {
                 rows={4}
                 placeholder={"DO: Tom direto, dados concretos, frases curtas, imagens reais do empreendimento\nDON'T: Não usar termos técnicos demais, não usar stock genérico, evitar texto longo em tela"}
               />
+            </div>
+
+            {/* ── BRIEFING DE VÍDEO ── */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+              <h2 className="text-base font-bold text-gray-800 mb-1 flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-violet-50 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                </div>
+                Briefing de Vídeo
+              </h2>
+              <p className="text-xs text-gray-500 mb-4">Configurações para os vídeos narrados e com apresentadora. Suba vídeos de referência nos Assets acima.</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Duração alvo</label>
+                  <select
+                    value={videoDuration}
+                    onChange={(e) => setVideoDuration(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-sm focus:ring-2 focus:ring-seazone-accent focus:border-transparent outline-none"
+                  >
+                    <option value="15">15 segundos (Reels/Stories)</option>
+                    <option value="30">30 segundos (Feed/Ads)</option>
+                    <option value="60">60 segundos (YouTube/Landing)</option>
+                  </select>
+                </div>
+                <FormInput
+                  label="Tom dos vídeos"
+                  value={videoTom}
+                  onChange={setVideoTom}
+                  placeholder="Ex: Profissional mas acessível, investidor conversa com investidor"
+                  hint="Como deve soar a narração e o tom geral"
+                />
+              </div>
+
+              <FormTextArea
+                label="Referência de estilo"
+                value={videoReferenceNotes}
+                onChange={setVideoReferenceNotes}
+                rows={3}
+                placeholder={"Descreva o estilo dos vídeos de referência que você subiu:\nEx: Drone vindo do mar, revela a fachada, corta para dados em tela, encerra com CTA.\nOu: Apresentadora fala direto com a câmera, imagens do empreendimento intercaladas."}
+                hint="Descreva como são os vídeos de referência para a IA replicar o estilo"
+              />
+
+              <div className="mt-2 p-3 rounded-xl bg-violet-50/50 border border-violet-100">
+                <h3 className="text-sm font-semibold text-violet-800 mb-2">Apresentadora</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormInput
+                    label="Nome da apresentadora"
+                    value={presentadoraNome}
+                    onChange={setPresentadoraNome}
+                    placeholder="Ex: Mônica"
+                  />
+                  <FormInput
+                    label="Estilo da apresentadora"
+                    value={presentadoraEstilo}
+                    onChange={setPresentadoraEstilo}
+                    placeholder="Ex: Carismática, como amiga especialista em investimentos"
+                    hint="Tom e personalidade"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* ── LOGO DO EMPREENDIMENTO ── */}

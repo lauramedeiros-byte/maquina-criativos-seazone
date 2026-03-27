@@ -9,6 +9,15 @@ interface RequestBody {
   pontosObrigatorios: string; // mandatory points that MUST appear
   doseDonts: string;
   lovableData: any; // full data from Lovable import
+  videoBriefing?: {
+    duration: string;
+    tom: string;
+    referenceNotes: string;
+    presentadora: {
+      nome: string;
+      estilo: string;
+    };
+  };
 }
 
 const SEAZONE_CONTEXT = `
@@ -39,7 +48,7 @@ IMPORTANTE: Os roteiros NÃO devem parecer propaganda genérica de imóvel de lu
 
 export async function POST(request: Request) {
   const body: RequestBody = await request.json();
-  const { nomeSpot, localizacao, pontosObrigatorios, doseDonts, lovableData } = body;
+  const { nomeSpot, localizacao, pontosObrigatorios, doseDonts, lovableData, videoBriefing } = body;
 
   if (!isConfigured()) {
     return NextResponse.json({
@@ -49,7 +58,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const prompt = buildPrompt(nomeSpot, localizacao, pontosObrigatorios, doseDonts, lovableData);
+    const prompt = buildPrompt(nomeSpot, localizacao, pontosObrigatorios, doseDonts, lovableData, videoBriefing);
 
     const result = await geminiText(prompt);
 
@@ -72,7 +81,8 @@ function buildPrompt(
   localizacao: string,
   pontosObrigatorios: string,
   doseDonts: string,
-  lovableData: any
+  lovableData: any,
+  videoBriefing?: RequestBody["videoBriefing"]
 ): string {
   const resumo = lovableData?.resumo || "";
 
@@ -91,7 +101,13 @@ ${pontosObrigatorios}
 Distribua os pontos obrigatórios entre os 45 roteiros. Cada criativo DEVE mencionar pelo menos 1 ponto obrigatório — use os dados reais acima (números, percentuais, valores) para tornar os roteiros concretos e críveis. Não invente dados que não estejam nos pontos obrigatórios.
 
 ${doseDonts ? `## Do's and Don'ts deste empreendimento:\n${doseDonts}\n` : ""}
-
+${videoBriefing ? `
+## BRIEFING DE VÍDEO:
+**Duração alvo:** ${videoBriefing.duration} segundos
+${videoBriefing.tom ? `**Tom:** ${videoBriefing.tom}` : ""}
+${videoBriefing.referenceNotes ? `**Estilo de referência:** ${videoBriefing.referenceNotes}\nIMPORTANTE: Os vídeos gerados DEVEM seguir este mesmo estilo visual e narrativo. Replique a estrutura de cenas descrita.` : ""}
+${videoBriefing.presentadora?.nome ? `**Apresentadora:** ${videoBriefing.presentadora.nome} — ${videoBriefing.presentadora.estilo || "carismática, especialista em investimentos"}` : ""}
+` : ""}
 ## Distribuição dos 45 criativos:
 
 ### 15 ESTÁTICOS (imagens com texto para feed/stories)
@@ -101,7 +117,7 @@ ${doseDonts ? `## Do's and Don'ts deste empreendimento:\n${doseDonts}\n` : ""}
 - Alguns devem ter tom de urgência/escassez, outros educativo, outros aspiracional
 
 ### 15 NARRADOS (vídeo com voz over) — IDs 16-30
-- Roteiro de 15-30 segundos com 3-5 cenas (scenes)
+- Roteiro de ${videoBriefing?.duration || "15"} segundos com 3-5 cenas (scenes)
 - Cada cena tem: duração, visual (descrição da imagem/vídeo), texto em tela, narração
 - Hook de abertura nos primeiros 3 segundos
 - A 1ª cena DEVE usar referência de fachada ou vista aérea do empreendimento
@@ -111,12 +127,12 @@ ${doseDonts ? `## Do's and Don'ts deste empreendimento:\n${doseDonts}\n` : ""}
 - videoPrompt: prompt completo em inglês para IA gerar o vídeo inteiro
 - style: "cinematic" (drone + transições suaves), "dynamic" (cortes rápidos), "educational" (dados em tela), "testimonial" (tom pessoal)
 
-### 15 APRESENTADORA (vídeo com avatar) — IDs 31-45
-- Mesma estrutura de scenes, mas a apresentadora (Mônica) aparece em cenas alternadas
-- Cenas da Mônica: visual descreve cenário limpo/clean ou com imagem de fundo do empreendimento
+### 15 APRESENTADORA (vídeo com ${videoBriefing?.presentadora?.nome || "apresentadora"}) — IDs 31-45
+- Mesma estrutura de scenes, mas a apresentadora (${videoBriefing?.presentadora?.nome || "apresentadora"}) aparece em cenas alternadas
+- Cenas da ${videoBriefing?.presentadora?.nome || "apresentadora"}: visual descreve cenário limpo/clean ou com imagem de fundo do empreendimento
 - Cenas de apoio: imagens do empreendimento, dados em tela
-- Tom conversacional e carismático
-- A Mônica fala direto com a câmera
+- Estilo: ${videoBriefing?.presentadora?.estilo || "conversacional e carismático"}
+- A ${videoBriefing?.presentadora?.nome || "apresentadora"} fala direto com a câmera
 
 ## FORMATO DE RESPOSTA (OBRIGATÓRIO):
 Responda EXATAMENTE neste formato JSON (sem markdown, sem \`\`\`):
